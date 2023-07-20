@@ -1,0 +1,60 @@
+[DEFAULT]
+
+# HCDR # ICU # RADCOM # HATE
+
+data_path = Datasets/HATE
+raw_data_path = Datasets/HATE
+perturbability_path = Datasets/HATE/edittible_features_rearrange.csv
+models_path = Models/HATE
+results_path = Results/HATE
+
+exp_type = attack
+# anomaly, attack    
+seed = 42
+
+
+[ATTACK]
+
+#hopskip_base, tabular_hopskip, boundary_base, tabular_boundary, surrogate
+
+attack_name = surrogate
+attack_size = 500 
+#each class
+
+seed = 42
+scaled_attack = False
+
+### boundary attack params ###
+
+epsilon=1.
+delta = 1.
+max_iter_b =3000
+num_trial =20
+adapt_step = 1.
+
+
+### hopskip attack params ###
+
+batch_size = 128
+norm = 2
+max_iter_h = 50
+max_eval_h = 10000
+init_eval = 500
+init_size = 100
+
+
+### surrogate attack params ###
+
+max_iter = 150
+max_opt_step = 1
+learning_rate=1.
+
+
+### surrogate generate params ###
+
+ATTACK_CONF_0 = 0.7
+ATTACK_CONF_1 = 0.3
+mask_imp = True
+importance = LGB
+top_imp = 2
+top_corr = 2
