@@ -91,15 +91,15 @@ class TabAdvEnv(gym.Env):
     self.target_models = model
     self.n = self.sample.shape[1]
 
-    # insert into it all changes that can be applied
+    # TODO - change this to be the number of changes that we can do
     self.changes = [random_number(min_val,max_val)]
 
     # define the number of actions that we can take
     self.action_space = spaces.Discrete(self.n)
     # for now init in actions space, after that expand it
     self.observation_space = spaces.Box(low=-1, high=1, shape=(2,), dtype=np.float32)##represents states
-    self.original_sample = adv_x[0]
-    self.original_label = adv_y['pred']
+    self.original_sample = x_adv[0]
+    self.original_label = y_adv['pred']
     self.original_prob = self.prob.copy()
 
     self.terminated = False
@@ -121,11 +121,9 @@ class TabAdvEnv(gym.Env):
     # update we made a change
     self.count +=1
 
-    # snippet to send to the model(copilot)
-    ###TODO - send the manipulated req first!-----------
     label = self.target_models.predict(self.sample)
 
-    # choose if to do the change on prompt or on suffix
+    # TODO - I dont think we need this part
     change = True if label == self.original_label else False
 
 
