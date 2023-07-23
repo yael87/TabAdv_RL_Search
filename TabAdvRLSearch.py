@@ -255,13 +255,13 @@ if __name__ == '__main__':
     
     # Get models
     GB, LGB, XGB, RF = load_target_models(data_path ,models_path)
-    SURR = load_surrogate_model(data_path ,models_path)
+    #SURR = load_surrogate_model(data_path ,models_path)
 
     target_models = [XGB]#, XGB, LGB, RF]
-    surr_model = SURR
+    #surr_model = SURR
         
     target_models_names = ["XGB"]#, "XGB", "LGB", "RF"]
-    surr_model_names = "SURR"
+    #surr_model_names = "SURR"
 
     model = PPO("MlpPolicy", env, verbose=1,  n_steps=20, batch_size=10, tensorboard_log="./PPO_a/")
 
@@ -284,8 +284,8 @@ if __name__ == '__main__':
     n_steps = 20
     x_adv =  datasets.get('x_test')
     y_adv =  datasets.get('y_test')
-    env.sample = x_adv[0]
-    env.label = y_adv['pred']
+    env.sample = x_adv.iloc[:1] #first sample
+    env.label = y_adv['pred'].iloc[:1]
     env.target_models = model
 
     print(env.prompt)
