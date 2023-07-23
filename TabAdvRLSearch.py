@@ -82,14 +82,15 @@ from gymnasium import spaces
 class TabAdvEnv(gym.Env):
   """Custom Environment that follows gym interface"""
 
-  def __init__(self):
+  def __init__(self, model, x_adv, y_adv):
     # init action that we can take
     super(TabAdvEnv, self).__init__()
     self.sample = x_adv
-    self.label = y_adv['pred']
-    self.prob = model.predict_proba(self.sample)
+    self.label = int(y_adv['pred'][0])
+    self.prob = model.predict_proba(self.sample)[0][0]
     self.target_models = model
     self.n = self.sample.shape[1]
+    self.state = np.zeros(2, dtype=np.float32)
 
     # TODO - change this to be the number of changes that we can do
     # self.changes = [change_up(), change_down()]
@@ -98,23 +99,27 @@ class TabAdvEnv(gym.Env):
     # self.action_space = spaces.Discrete(self.n)
 
     # self.action_space = spaces.Box(np.array([-1, 0, 0]), np.array([+1, +1, +1]))  # steer, gas, brake
-    # Action space -
-    num_features = 120
+    # TODO Action space -
+    num_features = 3  # Replace with the number of features
 
     # Define the minimum and maximum values for each feature
-    # Replace these with the appropriate values for your specific case
-    feature_min = [0, 1, -1, ...]  # A list of size 120 with minimum values for each feature
-    feature_max = [10, 100, 1, ...]  # A list of size 120 with maximum values for each feature
+    # TODO Replace these with the appropriate values for your specific case
+    feature_min = [0, 1, -1]  # A list of size 120 with minimum values for each feature
+    feature_max = [10, 100, 1]  # A list of size 120 with maximum values for each feature
 
-    # Define which features should be treated as integers
-    self.integer_features = [0, 1, 2, 10, 20]  # Replace with the indices of integer features
+    # TODO Define which features should be treated as integers
+    self.integer_features = [0, 1, ]  # Replace with the indices of integer features
 
-    action_spaces = []
+    action_space = []
     for i in range(num_features):
         if i in self.integer_features:
-            action_spaces.append(spaces.Discrete(feature_max[i] - feature_min[i] + 1))
+            action_space.append(spaces.Discrete(feature_max[i] - feature_min[i] + 1))
         else:
-            action_spaces.append(spaces.Box(low=feature_min[i], high=feature_max[i], shape=(1,), dtype=np.float32))
+            action_space.append(spaces.Box(low=feature_min[i], high=feature_max[i], shape=(1,), dtype=np.float32))
+
+    low_action_space = np.concatenate([component.low for component in action_space])
+    high_action_space = np.concatenate([component.high for component in action_space])
+    self.action_space = spaces.Box(low=low_action_space, high=high_action_space, dtype=np.float32)
 
     # for now init in actions space, after that expand it
     self.observation_space = spaces.Box(low=-1, high=1, shape=(2,), dtype=np.float32)##represents states
@@ -126,7 +131,7 @@ class TabAdvEnv(gym.Env):
     # # Define the observation space as a dictionary of Box spaces
     # self.observation_space = spaces.Dict(observation_spaces)
 
-    self.original_sample = x_adv[0]
+    self.original_sample = x_adv
     self.original_label = y_adv['pred']
     self.original_prob = self.prob.copy()
 
@@ -145,7 +150,7 @@ class TabAdvEnv(gym.Env):
     self.state[0] = self.label
     self.state[1] = np.abs(0.5 - self.prob) * sign
 
-    self.state = np.array([self.label, np.abs(0.5 - self.prob) * (-1 if self.label == 1 else 1)], dtype=np.float32)
+    # self.state = np.array([self.label, np.abs(0.5 - self.prob) * (-1 if self.label == 1 else 1)], dtype=np.float32)
 
   def step(self, action):
     # update we made a change
@@ -171,13 +176,13 @@ class TabAdvEnv(gym.Env):
         # self.sample = self.changes[action](self.sample)
         self.sample = modified_sample
         self.label = self.target_models.predict(self.sample)
-        self.prob = self.target_models.predict_proba(self.sample)
+        self.prob = self.target_models.predict_proba(self.sample)[0]
 
     #else - change other features
-    # sign = -1 if self.label == 1 else 1
+    sign = (-1 if self.label == 1 else 1)
     # self.state[0] = self.label
     # self.state[1] = np.abs(0.5 - self.prob) * sign
-    self.state = np.array([self.label, np.abs(0.5 - self.prob) * (-1 if self.label == 1 else 1)], dtype=np.float32)
+    self.state = np.array([self.label, np.abs(0.5 - self.prob) * sign], dtype=np.float32)
 
 
     # calculate reward
@@ -291,12 +296,13 @@ if __name__ == '__main__':
     #process(dataset_name, raw_data_path, TorchMinMaxScaler)
     #train_models(data_path, datasets)
     #train_REG_models(dataset_name, data_path, datasets) 
-    x_adv = datasets.get('x_test')
-    y_adv = datasets.get('y_test')
-    env = TabAdvEnv()
-    
+    x_adv = datasets.get('x_test').iloc[:1] #first sample
+    y_adv = datasets.get('y_test').iloc[:1] #first sample
     # Get models
-    GB, LGB, XGB, RF = load_target_models(data_path ,models_path)
+    GB, LGB, XGB, RF = load_target_models(data_path, models_path)
+    env = TabAdvEnv(GB, x_adv, y_adv)
+    
+
     #SURR = load_surrogate_model(data_path ,models_path)
 
     target_models = [XGB]#, XGB, LGB, RF]
