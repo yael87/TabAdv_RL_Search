@@ -107,11 +107,11 @@ class TabAdvEnv(gym.Env):
     feature_max = [10, 100, 1, ...]  # A list of size 120 with maximum values for each feature
 
     # Define which features should be treated as integers
-    integer_features = [0, 1, 2, 10, 20]  # Replace with the indices of integer features
+    self.integer_features = [0, 1, 2, 10, 20]  # Replace with the indices of integer features
 
     action_spaces = []
     for i in range(num_features):
-        if i in integer_features:
+        if i in self.integer_features:
             action_spaces.append(spaces.Discrete(feature_max[i] - feature_min[i] + 1))
         else:
             action_spaces.append(spaces.Box(low=feature_min[i], high=feature_max[i], shape=(1,), dtype=np.float32))
@@ -156,16 +156,28 @@ class TabAdvEnv(gym.Env):
 
     change = True if label == self.original_label else False
 
-
     if change:
-      self.sample = self.changes[action](self.sample)
-      self.label = self.target_models.predict(self.sample)
-      self.prob = self.target_models.predict_proba(self.sample)
-    
+        # Apply the action to modify the features
+        modified_sample = np.copy(self.sample)
+        for i, action_component in enumerate(action):
+            if i in self.integer_features:
+                # If the feature is an integer, round the action component to the nearest integer
+                modified_sample[i] == round(action_component)
+            else:
+                # If the feature is a float, apply the action component directly
+                modified_sample[i] == action_component
+
+
+        # self.sample = self.changes[action](self.sample)
+        self.sample = modified_sample
+        self.label = self.target_models.predict(self.sample)
+        self.prob = self.target_models.predict_proba(self.sample)
+
     #else - change other features
-    sign = -1 if self.label == 1 else 1
-    self.state[0] = self.label
-    self.state[1] = np.abs(0.5 - self.prob) * sign
+    # sign = -1 if self.label == 1 else 1
+    # self.state[0] = self.label
+    # self.state[1] = np.abs(0.5 - self.prob) * sign
+    self.state = np.array([self.label, np.abs(0.5 - self.prob) * (-1 if self.label == 1 else 1)], dtype=np.float32)
 
 
     # calculate reward
