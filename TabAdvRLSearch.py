@@ -278,8 +278,8 @@ if __name__ == '__main__':
 
     x_sample = datasets.get('x_test')[0]
     y_sample = datasets.get('y_test')[0]
-    vec_env = make_vec_env(TabAdvEnv, n_envs=1, x_sample, y_sample)
-
+    # vec_env = make_vec_env(TabAdvEnv, n_envs=1, x_sample, y_sample)
+    vec_env = make_vec_env(TabAdvEnv, n_envs=1)
     obs = vec_env.reset()
     n_steps = 20
     x_adv =  datasets.get('x_test')
