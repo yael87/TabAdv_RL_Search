@@ -10,7 +10,7 @@ Original file is located at
 
 required pip install packages
 """
-
+'''
 print( 0)
 
 # !pip install tensorflow==2.8.0
@@ -34,35 +34,49 @@ print( 0)
 # !pip install --upgrade protoc==3.19.0####tensorboard==2.9.1#"protobuf>=3.20.1"
 
 """imports"""
+'''
+#from redbaron import RedBaron
 
-from redbaron import RedBaron
+import sys
+import pandas as pd
+import numpy as np
+import configparser
+import random
+import pickle
+import torch
+from sklearn.utils import shuffle
+from sklearn.model_selection import train_test_split
+
+#from Models.scikitlearn_wrapper import SklearnClassifier
+
+# prepare data and models
+from Utils.data_utils import preprocess_credit, drop_corolated_target, split_to_datasets, preprocess_top100, preprocess_HCDR, \
+                            preprocess_ICU, preprocess_HATE,rearrange_columns, rearrange_columns_edittable, over_sampling, \
+                            write_edditable_file
+
+from Utils.models_utils import load_target_models, load_surrogate_model, train_GB_model, train_LGB_model, train_RF_model, train_XGB_model,  \
+                            train_REGRESSOR_model, compute_importance
+
 import ast
 from collections import defaultdict
 import re
 import uuid
-import random
-import nltk
-nltk.download('omw-1.4')
-nltk.download('wordnet')
-from nltk.corpus import wordnet
+
+#import nltk
+#nltk.download('omw-1.4')
+#nltk.download('wordnet')
+#from nltk.corpus import wordnet
 import json
 from urllib import request
 import requests
 #######import keras
 # import gym, keep it like this, do not change
-import random
+
 # from gym import Env, keep it like this
 # from gym.spaces import Discrete, Box, keep it like this do not change
-import numpy as np
-import gymnasium as gym
-import numpy as np
-from gymnasium import spaces
-
 
 import gymnasium as gym
-import numpy as np
 from gymnasium import spaces
-import pandas as pd
 
 
 class TabAdvEnv(gym.Env):
@@ -71,8 +85,8 @@ class TabAdvEnv(gym.Env):
   def __init__(self):
     # init action that we can take
     super(TabAdvEnv, self).__init__()
-    self.sample = adv_x[0]
-    self.label = adv_y['pred']
+    self.sample = x_adv[0]
+    self.label = y_adv['pred']
     self.prob = model.predict_proba(self.sample)
     self.target_models = model
     self.n = self.sample.shape[1]
@@ -202,41 +216,89 @@ from stable_baselines3.common.env_util import make_vec_env
 #        (i.e. rollout buffer size is n_steps * n_envs where n_envs is number of environment copies running in parallel)
 #       NOTE: n_steps * n_envs must be greater than 1 (because of the advantage normalization)
 # :param batch_size: Minibatch size
+def get_config():
+    config = configparser.ConfigParser()
+    #config.read(sys.argv[1])
+    config.read('configurations.txt')
+    config = config['DEFAULT']
+    return config
 
-model = PPO("MlpPolicy", env, verbose=1,  n_steps=20, batch_size=10, tensorboard_log="./PPO_a/")
-for row in adv_x:
+
+if __name__ == '__main__':
+
+    # Set parameters
+    
+    configurations = get_config()
+    data_path = configurations["data_path"]
+    raw_data_path = configurations["raw_data_path"]
+    perturbability_path = configurations["perturbability_path"]
+    results_path = configurations["results_path"]
+    seed = int(configurations["seed"])
+    dataset_name = raw_data_path.split("/")[1]
+    models_path = configurations['models_path']
+    exp_type = configurations['exp_type']
+    
+    # Get dataset
+    datasets = split_to_datasets(raw_data_path, save_path=data_path)
+    
+    # Get scalers
+    scaler = pickle.load(open(data_path+"/scaler.pkl", 'rb' ))
+    scaler_pt = pickle.load(open(data_path+"/scaler_pt.pkl", 'rb' ))
+    #constraints, perturbability = get_constraints(dataset_name, perturbability_path)
+
+    columns_names = list(datasets.get('x_test').columns)
+
+    #process(dataset_name, raw_data_path, TorchMinMaxScaler)
+    #train_models(data_path, datasets)
+    #train_REG_models(dataset_name, data_path, datasets) 
+
+    
+    # Get models
+    GB, LGB, XGB, RF = load_target_models(data_path ,models_path)
+    #SURR = load_surrogate_model(data_path ,models_path)
+
+    target_models = [XGB]#, XGB, LGB, RF]
+    #surr_model = SURR
+        
+    target_models_names = ["XGB"]#, "XGB", "LGB", "RF"]
+    #surr_model_names = "SURR"
+
+    model = PPO("MlpPolicy", env, verbose=1,  n_steps=20, batch_size=10, tensorboard_log="./PPO_a/")
+
     model.learn(total_timesteps=200, tb_log_name="first_run", progress_bar=True)
     model.learn(total_timesteps=200, tb_log_name="second_run", reset_num_timesteps=False, progress_bar=True)
     model.learn(total_timesteps=200, tb_log_name="third_run", reset_num_timesteps=False, progress_bar=True)
 
-!pip install tensorboard
-from tensorboard import notebook
+    #!pip install tensorboard
+    #from tensorboard import notebook
 
-notebook.start("--logdir ./PPO_a/")
+    #notebook.start("--logdir ./PPO_a/")
 
-!tensorboard --logdir=./PPO_a/
+    #!tensorboard --logdir=./PPO_a/
 
-vec_env = make_vec_env(TabAdvEnv, n_envs=1)
+    x_sample = datasets.get('x_test')[0]
+    y_sample = datasets.get('y_test')[0]
+    vec_env = make_vec_env(TabAdvEnv, n_envs=1, x_sample, y_sample)
 
-obs = vec_env.reset()
-n_steps = 20
-adv_x = pd.DataFrame()
-adv_y = pd.DataFrame()
-env.sample = adv_x[0]
-env.label = adv_y['pred']
-env.target_models = model
+    obs = vec_env.reset()
+    n_steps = 20
+    x_adv =  datasets.get('x_test')
+    y_adv =  datasets.get('y_test')
+    env.sample = x_adv.iloc[:1] #first sample
+    env.label = y_adv['pred'].iloc[:1]
+    env.target_models = model
 
-print(env.prompt)
-for step in range(n_steps):
-    action, _ = model.predict(obs, deterministic=False)
-    print(f"Step {step + 1}")
-    print(f"Change that has been made: {str(env.changes[action[0]])}")
-    print("Action: ", action)
-    obs, reward, done, info = vec_env.step(action)
-    print("obs=", obs, "reward=", reward, "done=", done)
-    if done:
-        # Note that the VecEnv resets automatically
-        # when a done signal is encountered
-        print("Goal reached!", "reward=", reward)
-        break
+    print(env.prompt)
+    for step in range(n_steps):
+        action, _ = model.predict(obs, deterministic=False)
+        print(f"Step {step + 1}")
+        print(f"Change that has been made: {str(env.changes[action[0]])}")
+        print("Action: ", action)
+        obs, reward, done, info = vec_env.step(action)
+        print("obs=", obs, "reward=", reward, "done=", done)
+        if done:
+            # Note that the VecEnv resets automatically
+            # when a done signal is encountered
+            print("Goal reached!", "reward=", reward)
+            break
 

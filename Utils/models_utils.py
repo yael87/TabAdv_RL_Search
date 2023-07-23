@@ -11,7 +11,7 @@ from sklearn.utils import resample, shuffle
 import math
 import matplotlib.pyplot as plt
 from sklearn.metrics import confusion_matrix, classification_report
-from Utils.surrogate_model import train_SURR_NN_model
+#from Utils.surrogate_model import train_SURR_NN_model
 
 #from pyimagesearch import mlp
 from collections import OrderedDict
