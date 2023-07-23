@@ -13,25 +13,25 @@ required pip install packages
 
 print( 0)
 
-!pip install tensorflow==2.8.0
-!pip install tensorflow==2.12.0
-!pip install gym
-!pip install keras
-!pip install keras-rl2
-!pip install Levenshtein
-!pip install redbaron
-!pip install gymnasium
-!pip install swig
-!pip3 install box2d-py
-!pip install --upgrade ipykernel
-!pip install pygame --user
-!apt-get update && apt-get install ffmpeg freeglut3-dev xvfb  # For visualization
-!pip install Levenshtein
-!pip install redbaron
-!pip install gymnasium
-!pip install "stable-baselines3[extra]>=2.0.0a4"
-
-!pip install --upgrade protoc==3.19.0####tensorboard==2.9.1#"protobuf>=3.20.1"
+# !pip install tensorflow==2.8.0
+# !pip install tensorflow==2.12.0
+# !pip install gym
+# !pip install keras
+# !pip install keras-rl2
+# !pip install Levenshtein
+# !pip install redbaron
+# !pip install gymnasium
+# !pip install swig
+# !pip3 install box2d-py
+# !pip install --upgrade ipykernel
+# !pip install pygame --user
+# !apt-get update && apt-get install ffmpeg freeglut3-dev xvfb  # For visualization
+# !pip install Levenshtein
+# !pip install redbaron
+# !pip install gymnasium
+# !pip install "stable-baselines3[extra]>=2.0.0a4"
+#
+# !pip install --upgrade protoc==3.19.0####tensorboard==2.9.1#"protobuf>=3.20.1"
 
 """imports"""
 
