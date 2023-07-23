@@ -85,19 +85,47 @@ class TabAdvEnv(gym.Env):
   def __init__(self):
     # init action that we can take
     super(TabAdvEnv, self).__init__()
-    self.sample = x_adv[0]
+    self.sample = x_adv
     self.label = y_adv['pred']
     self.prob = model.predict_proba(self.sample)
     self.target_models = model
     self.n = self.sample.shape[1]
 
     # TODO - change this to be the number of changes that we can do
-    self.changes = [random_number(min_val,max_val)]
+    # self.changes = [change_up(), change_down()]
 
     # define the number of actions that we can take
-    self.action_space = spaces.Discrete(self.n)
+    # self.action_space = spaces.Discrete(self.n)
+
+    # self.action_space = spaces.Box(np.array([-1, 0, 0]), np.array([+1, +1, +1]))  # steer, gas, brake
+    # Action space -
+    num_features = 120
+
+    # Define the minimum and maximum values for each feature
+    # Replace these with the appropriate values for your specific case
+    feature_min = [0, 1, -1, ...]  # A list of size 120 with minimum values for each feature
+    feature_max = [10, 100, 1, ...]  # A list of size 120 with maximum values for each feature
+
+    # Define which features should be treated as integers
+    integer_features = [0, 1, 2, 10, 20]  # Replace with the indices of integer features
+
+    action_spaces = []
+    for i in range(num_features):
+        if i in integer_features:
+            action_spaces.append(spaces.Discrete(feature_max[i] - feature_min[i] + 1))
+        else:
+            action_spaces.append(spaces.Box(low=feature_min[i], high=feature_max[i], shape=(1,), dtype=np.float32))
+
     # for now init in actions space, after that expand it
     self.observation_space = spaces.Box(low=-1, high=1, shape=(2,), dtype=np.float32)##represents states
+    # observation_spaces = {}
+    # for i in range(num_features):
+    #     observation_spaces[f'feature_{i}'] = spaces.Box(low=feature_min[i], high=feature_max[i], shape=(1,),
+    #                                                     dtype=np.float32)
+    #
+    # # Define the observation space as a dictionary of Box spaces
+    # self.observation_space = spaces.Dict(observation_spaces)
+
     self.original_sample = x_adv[0]
     self.original_label = y_adv['pred']
     self.original_prob = self.prob.copy()
@@ -117,13 +145,15 @@ class TabAdvEnv(gym.Env):
     self.state[0] = self.label
     self.state[1] = np.abs(0.5 - self.prob) * sign
 
+    self.state = np.array([self.label, np.abs(0.5 - self.prob) * (-1 if self.label == 1 else 1)], dtype=np.float32)
+
   def step(self, action):
     # update we made a change
     self.count +=1
 
     label = self.target_models.predict(self.sample)
 
-    # TODO - I dont think we need this part
+
     change = True if label == self.original_label else False
 
 
@@ -201,7 +231,7 @@ class TabAdvEnv(gym.Env):
     pass
 
 # from stable_baselines3.common.env_checker import check_env
-env = TabAdvEnv()
+
 # If the environment don't follow the interface, an error will be thrown
 # check_env(env, warn=True)
 
@@ -240,8 +270,8 @@ if __name__ == '__main__':
     datasets = split_to_datasets(raw_data_path, save_path=data_path)
     
     # Get scalers
-    scaler = pickle.load(open(data_path+"/scaler.pkl", 'rb' ))
-    scaler_pt = pickle.load(open(data_path+"/scaler_pt.pkl", 'rb' ))
+    # scaler = pickle.load(open(data_path+"/scaler.pkl", 'rb' ))
+    # scaler_pt = pickle.load(open(data_path+"/scaler_pt.pkl", 'rb' ))
     #constraints, perturbability = get_constraints(dataset_name, perturbability_path)
 
     columns_names = list(datasets.get('x_test').columns)
@@ -249,7 +279,9 @@ if __name__ == '__main__':
     #process(dataset_name, raw_data_path, TorchMinMaxScaler)
     #train_models(data_path, datasets)
     #train_REG_models(dataset_name, data_path, datasets) 
-
+    x_adv = datasets.get('x_test')
+    y_adv = datasets.get('y_test')
+    env = TabAdvEnv()
     
     # Get models
     GB, LGB, XGB, RF = load_target_models(data_path ,models_path)
@@ -280,8 +312,7 @@ if __name__ == '__main__':
     vec_env = make_vec_env(TabAdvEnv, n_envs=1)
     obs = vec_env.reset()
     n_steps = 20
-    x_adv =  datasets.get('x_test')
-    y_adv =  datasets.get('y_test')
+
     env.sample = x_adv.iloc[:1] #first sample
     env.label = y_adv['pred'].iloc[:1]
     env.target_models = model
