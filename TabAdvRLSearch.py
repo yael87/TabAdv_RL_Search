@@ -251,19 +251,20 @@ class TabAdvEnv(gym.Env):
 
 
   def reset(self, seed=None, options=None):#init the env ()
-    super().reset(seed=seed, options=options)
-    self.number_of_changes = 1000000
-    self.terminated = False
-    # reset the environment, all param need to be 0s.
-    sign = -1 if self.label == 1 else 1
-    self.state[0] = self.label
-    self.state[1] = np.abs(0.5 - self.prob) * sign
+        #super().reset(seed=seed, options=options)
+        super().reset()
+        self.number_of_changes = 1000000
+        self.terminated = False
+        # reset the environment, all param need to be 0s.
+        sign = -1 if self.label == 1 else 1
+        self.state[0] = self.label
+        self.state[1] = np.abs(0.5 - self.prob) * sign
 
-    self.sample = self.original_sample
-    self.label = self.original_label
-    self.prob = self.original_prob
-    self.total_reward = 0
-    return np.array(self.state).astype(np.float32), {}
+        self.sample = self.original_sample
+        self.label = self.original_label
+        self.prob = self.original_prob
+        self.total_reward = 0
+        return np.array(self.state).astype(np.float32), {}
 
   def render(self):
     pass
@@ -335,12 +336,17 @@ if __name__ == '__main__':
     target_models_names = ["GB"]#, "XGB", "LGB", "RF"]
     #surr_model_names = "SURR"
 
-    model = PPO("MlpPolicy", env)
+    model = PPO("MlpPolicy", env, n_steps=200, verbose=1, tensorboard_log="./PPO_a/")
     #model = PPO("MultiInputPolicy", env)
 
-    model.learn(total_timesteps=200, tb_log_name="first_run", progress_bar=True)
-    model.learn(total_timesteps=200, tb_log_name="second_run", reset_num_timesteps=False, progress_bar=True)
-    model.learn(total_timesteps=200, tb_log_name="third_run", reset_num_timesteps=False, progress_bar=True)
+    #model.learn(total_timesteps=200, tb_log_name="first_run", progress_bar=True)
+    #model.learn(total_timesteps=200, tb_log_name="second_run", reset_num_timesteps=False, progress_bar=True)
+    #model.learn(total_timesteps=200, tb_log_name="third_run", reset_num_timesteps=False, progress_bar=True)
+    model.learn(total_timesteps=200, tb_log_name="first_run")
+    model.learn(total_timesteps=200, tb_log_name="second_run", reset_num_timesteps=False)
+    model.learn(total_timesteps=200, tb_log_name="third_run", reset_num_timesteps=False)
+
+
 
     #!pip install tensorboard
     #from tensorboard import notebook
@@ -358,7 +364,7 @@ if __name__ == '__main__':
 
     env.sample = x_adv.iloc[:1] #first sample
     env.label = y_adv['pred'].iloc[:1]
-    env.target_models = model
+    env.target_models = target_models[0]
 
     print(env.prompt)
     for step in range(n_steps):
