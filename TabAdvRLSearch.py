@@ -73,10 +73,13 @@ import requests
 # import gym, keep it like this, do not change
 
 # from gym import Env, keep it like this
-# from gym.spaces import Discrete, Box, keep it like this do not change
 
-import gymnasium as gym
-from gymnasium import spaces
+
+#import gymnasium as gym
+#from gymnasium import spaces
+import gym as gym
+from gym import spaces as spaces
+
 
 
 class TabAdvEnv(gym.Env):
@@ -100,26 +103,47 @@ class TabAdvEnv(gym.Env):
 
     # self.action_space = spaces.Box(np.array([-1, 0, 0]), np.array([+1, +1, +1]))  # steer, gas, brake
     # TODO Action space -
-    num_features = 3  # Replace with the number of features
+    num_features = x_adv.shape[1]  # Replace with the number of features
 
     # Define the minimum and maximum values for each feature
     # TODO Replace these with the appropriate values for your specific case
-    feature_min = [0, 1, -1]  # A list of size 120 with minimum values for each feature
-    feature_max = [10, 100, 1]  # A list of size 120 with maximum values for each feature
+    range_features = pd.read_csv(raw_data_path+'/range_features.csv')
+    feature_min = []
+    feature_max = []
+    for i, row in range_features.iterrows():
+        if row['const'] == 'p':
+            feature_min.append(0)
+            feature_max.append(np.inf)
+        elif row['const'] == 'n':
+            feature_min.append(-np.inf)
+            feature_max.append(0)
+        elif row['const'] == 'b':
+            feature_min.append(0)
+            feature_max.append(1)
+        else:
+            feature_min.append(-np.inf)
+            feature_max.append(np.inf)
+            
+    #feature_min = [0, 1, -1]  # A list of size 120 with minimum values for each feature
+    #feature_max = [10, 100, 1]  # A list of size 120 with maximum values for each feature
 
     # TODO Define which features should be treated as integers
-    self.integer_features = [0, 1, ]  # Replace with the indices of integer features
+    #self.integer_features = [0, 1, ]  # Replace with the indices of integer features
+    integer_features = np.where(range_features['integer'] == 1)[0].tolist()
 
-    action_space = []
+    action_space = dict()
     for i in range(num_features):
-        if i in self.integer_features:
-            action_space.append(spaces.Discrete(feature_max[i] - feature_min[i] + 1))
-        else:
-            action_space.append(spaces.Box(low=feature_min[i], high=feature_max[i], shape=(1,), dtype=np.float32))
+        if range_features['const'][i] != 'd':
+            if i in integer_features:
+                action_space[i] = spaces.Discrete(feature_max[i] - feature_min[i] + 1)
+            else:
+                action_space[i] = spaces.Box(low=feature_min[i], high=feature_max[i], shape=(1,), dtype=np.float32)
 
-    low_action_space = np.concatenate([component.low for component in action_space])
-    high_action_space = np.concatenate([component.high for component in action_space])
-    self.action_space = spaces.Box(low=low_action_space, high=high_action_space, dtype=np.float32)
+    #action_space = tuple(action_space)
+    self.action_space = spaces.Box(low=np.array(feature_min),
+                               high=np.array(feature_max),
+                               dtype=np.float32)
+    #self.action_space = spaces.Dict(action_space)
 
     # for now init in actions space, after that expand it
     self.observation_space = spaces.Box(low=-1, high=1, shape=(2,), dtype=np.float32)##represents states
@@ -143,7 +167,7 @@ class TabAdvEnv(gym.Env):
     self.count = 0#how many time I went over the current prompt
     # define for now when to stop apply changes for now, inspired from https://people.cs.pitt.edu/~chang/seke/seke22paper/paper066.pdf
     # eqvilient to shower length in example
-    self.number_of_changes = np.inf
+    self.number_of_changes = 1000000
 
     # initialize first observation
     sign = -1 if self.label == 1 else 1
@@ -186,9 +210,9 @@ class TabAdvEnv(gym.Env):
 
 
     # calculate reward
-    L0_dist = np.linalg.norm(self.original_sample - self.sample, ord=0)
-    L2_dist = np.linalg.norm(self.original_sample - self.sample, ord=2)
-    L_inf_dist = np.linalg.norm(self.original_sample - self.sample, ord=np.inf)
+    L0_dist = torch.linalg.norm(self.original_sample - self.sample, ord=0)
+    L2_dist = torch.linalg.norm(self.original_sample - self.sample, ord=2)
+    L_inf_dist = torch.linalg.norm(self.original_sample - self.sample, ord=torch.inf)
     
     if self.original_label == 1:
         if self.prob[1] < 0.5:
@@ -228,7 +252,7 @@ class TabAdvEnv(gym.Env):
 
   def reset(self, seed=None, options=None):#init the env ()
     super().reset(seed=seed, options=options)
-    self.number_of_changes = np.inf
+    self.number_of_changes = 1000000
     self.terminated = False
     # reset the environment, all param need to be 0s.
     sign = -1 if self.label == 1 else 1
@@ -301,17 +325,18 @@ if __name__ == '__main__':
     # Get models
     GB, LGB, XGB, RF = load_target_models(data_path, models_path)
     env = TabAdvEnv(GB, x_adv, y_adv)
-    
+    print(type(env.action_space))
 
     #SURR = load_surrogate_model(data_path ,models_path)
 
-    target_models = [XGB]#, XGB, LGB, RF]
+    target_models = [GB]#, XGB, LGB, RF]
     #surr_model = SURR
         
-    target_models_names = ["XGB"]#, "XGB", "LGB", "RF"]
+    target_models_names = ["GB"]#, "XGB", "LGB", "RF"]
     #surr_model_names = "SURR"
 
-    model = PPO("MlpPolicy", env, verbose=1,  n_steps=20, batch_size=10, tensorboard_log="./PPO_a/")
+    model = PPO("MlpPolicy", env)
+    #model = PPO("MultiInputPolicy", env)
 
     model.learn(total_timesteps=200, tb_log_name="first_run", progress_bar=True)
     model.learn(total_timesteps=200, tb_log_name="second_run", reset_num_timesteps=False, progress_bar=True)
