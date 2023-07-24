@@ -95,7 +95,7 @@ class TabAdvEnv(gym.Env):
     self.n = self.sample.shape[1]
     self.state = np.zeros(2, dtype=np.float32)
 
-    # TODO - change this to be the number of changes that we can do
+
     # self.changes = [change_up(), change_down()]
 
     # define the number of actions that we can take
@@ -131,13 +131,13 @@ class TabAdvEnv(gym.Env):
     #self.integer_features = [0, 1, ]  # Replace with the indices of integer features
     integer_features = np.where(range_features['integer'] == 1)[0].tolist()
 
-    action_space = dict()
-    for i in range(num_features):
-        if range_features['const'][i] != 'd':
-            if i in integer_features:
-                action_space[i] = spaces.Discrete(feature_max[i] - feature_min[i] + 1)
-            else:
-                action_space[i] = spaces.Box(low=feature_min[i], high=feature_max[i], shape=(1,), dtype=np.float32)
+    # action_space = dict()
+    # for i in range(num_features):
+    #     if range_features['const'][i] != 'd':
+    #         if i in integer_features:
+    #             action_space[i] = spaces.Discrete(feature_max[i] - feature_min[i] + 1)
+    #         else:
+    #             action_space[i] = spaces.Box(low=feature_min[i], high=feature_max[i], shape=(1,), dtype=np.float32)
 
     #action_space = tuple(action_space)
     self.action_space = spaces.Box(low=np.array(feature_min),

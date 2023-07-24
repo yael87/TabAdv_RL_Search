@@ -1,6 +1,6 @@
 numpy~=1.25.1
 pandas~=1.5.3
-torch~=2.0.1
+torch~=1.12.1
 scikit-learn~=1.0.2
 matplotlib~=3.7.2
 requests~=2.28.2
@@ -8,3 +8,4 @@ gymnasium~=0.28.1
 lightgbm~=4.0.0
 wandb~=0.15.5
 xgboost~=1.7.6
+gym~=0.26.2
