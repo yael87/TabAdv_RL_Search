@@ -131,22 +131,23 @@ class TabAdvEnv(gym.Env):
     #self.integer_features = [0, 1, ]  # Replace with the indices of integer features
     integer_features = np.where(range_features['integer'] == 1)[0].tolist()
 
-    # action_space = dict()
-    # for i in range(num_features):
-    #     if range_features['const'][i] != 'd':
-    #         if i in integer_features:
-    #             action_space[i] = spaces.Discrete(feature_max[i] - feature_min[i] + 1)
-    #         else:
-    #             action_space[i] = spaces.Box(low=feature_min[i], high=feature_max[i], shape=(1,), dtype=np.float32)
+    action_space = dict()
+    for i in range(num_features):
+        if range_features['const'][i] != 'd':
+            if i in integer_features:
+                action_space[i] = spaces.Discrete(feature_max[i] - feature_min[i] + 1)
+            else:
+                action_space[i] = spaces.Box(low=feature_min[i], high=feature_max[i], shape=(1,), dtype=np.float32)
 
-    #action_space = tuple(action_space)
-    self.action_space = spaces.Box(low=np.array(feature_min),
-                               high=np.array(feature_max),
-                               dtype=np.float32)
-    #self.action_space = spaces.Dict(action_space)
+    # self.action_space = spaces.Box(low=np.array(feature_min),
+    #                            high=np.array(feature_max),
+    #                            dtype=np.float32)
+    self.action_space = spaces.Dict(action_space)
+    low_state = np.array([0, -1], dtype=np.float32)
+    high_state = np.array([1, 1], dtype=np.float32)
 
     # for now init in actions space, after that expand it
-    self.observation_space = spaces.Box(low=-1, high=1, shape=(2,), dtype=np.float32)##represents states
+    self.observation_space = spaces.Box(low=low_state, high=high_state, dtype=np.float32) ##represents states
     # observation_spaces = {}
     # for i in range(num_features):
     #     observation_spaces[f'feature_{i}'] = spaces.Box(low=feature_min[i], high=feature_max[i], shape=(1,),
@@ -171,9 +172,9 @@ class TabAdvEnv(gym.Env):
 
     # initialize first observation
     sign = -1 if self.label == 1 else 1
-    self.state[0] = self.label
-    self.state[1] = np.abs(0.5 - self.prob) * sign
-
+    # self.state[0] = self.label
+    # self.state[1] = np.abs(0.5 - self.prob) * sign
+    self.state = np.array([self.label, np.abs(0.5 - self.prob) * sign], dtype=np.float32)
     # self.state = np.array([self.label, np.abs(0.5 - self.prob) * (-1 if self.label == 1 else 1)], dtype=np.float32)
 
   def step(self, action):

@@ -68,7 +68,7 @@ if __name__ == '__main__':
 
     ####### initialize environment hyperparameters ######
 
-    env_name = "CartPole-v1"
+    env_name = "TabularAdv-v0"      # environment name
     has_continuous_action_space = True #False
 
     max_ep_len = 400                    # max timesteps in one episode
@@ -79,7 +79,7 @@ if __name__ == '__main__':
     save_model_freq = int(2e4)      # save model frequency (in num timesteps)
 
     #TODO: define action_std
-    action_std = None
+    action_std = 0.1               # starting std for action distribution (Multivariate Normal)
 
 
     #####################################################
@@ -105,10 +105,10 @@ if __name__ == '__main__':
 
 
 
-    print("training environment name : " + env_name)
+    # print("training environment name : " + env_name)
 
     #env = gym.make(env_name)
-    env = TabAdvEnv(GB, x_adv, y_adv, raw_data_path)
+    env = TabAdvEnv(GB, torch.from_numpy(np.array(x_adv)), y_adv, raw_data_path)
 
     # state space dimension
     state_dim = env.observation_space.shape[0]
@@ -190,9 +190,9 @@ if __name__ == '__main__':
         print("Initializing a continuous action space policy")
         print("--------------------------------------------------------------------------------------------")
         print("starting std of action distribution : ", action_std)
-        #print("decay rate of std of action distribution : ", action_std_decay_rate)
-        #print("minimum std of action distribution : ", min_action_std)
-        #print("decay frequency of std of action distribution : " + str(action_std_decay_freq) + " timesteps")
+        # print("decay rate of std of action distribution : ", action_std_decay_rate)
+        # print("minimum std of action distribution : ", min_action_std)
+        # print("decay frequency of std of action distribution : " + str(action_std_decay_freq) + " timesteps")
 
     else:
         print("Initializing a discrete action space policy")
@@ -281,7 +281,7 @@ if __name__ == '__main__':
 
                 # log average reward till last episode
                 log_avg_reward = log_running_reward / log_running_episodes
-                log_avg_reward = round(log_avg_reward, 4)
+                log_avg_reward = round(log_avg_reward.numpy()[0], 4)
 
                 log_f.write('{},{},{}\n'.format(i_episode, time_step, log_avg_reward))
                 log_f.flush()
@@ -294,7 +294,7 @@ if __name__ == '__main__':
 
                 # print average reward till last episode
                 print_avg_reward = print_running_reward / print_running_episodes
-                print_avg_reward = round(print_avg_reward, 2)
+                print_avg_reward = round(print_avg_reward.numpy()[0],2)
 
                 print("Episode : {} \t\t Timestep : {} \t\t Average Reward : {}".format(i_episode, time_step, print_avg_reward))
 
