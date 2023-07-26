@@ -158,17 +158,21 @@ class TabAdvEnv(gym.Env):
             reward = 1
         elif self.prob[1] < self.original_prob[1]:
             reward = 0.5
-        elif self.prob[1] >= self.original_prob[1]:
-           reward = -1
+        elif self.prob[1] > self.original_prob[1]:
+           reward = -0.5
+        elif self.prob[1] == self.original_prob[1]:
+            reward = -1
     else:
         if self.prob[1] > 0.5:
             reward = 1
         elif self.prob[1] > self.original_prob[1]:
             reward = 0.5
-        elif self.prob[1] <= self.original_prob[1]:
+        elif self.prob[1] < self.original_prob[1]:
+            reward = -0.5
+        elif self.prob[1] == self.original_prob[1]:
             reward = -1
 
-    objective =  reward - 0.05#- self.L0_dist/self.n
+    objective =  reward #- self.L0_dist/self.n
 
 
     # we want to maximzie this, maybe do some hyper parameter for it
