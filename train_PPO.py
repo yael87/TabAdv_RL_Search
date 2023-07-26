@@ -281,7 +281,7 @@ if __name__ == '__main__':
 
                 # log average reward till last episode
                 log_avg_reward = log_running_reward / log_running_episodes
-                if (log_avg_reward.type() != 'torch.FloatTensor'):
+                if (type(log_avg_reward) != 'torch.FloatTensor'):
                     log_avg_reward = round(log_avg_reward,4)
                 else:
                     log_avg_reward = round(log_avg_reward.numpy()[0], 4)
@@ -297,10 +297,16 @@ if __name__ == '__main__':
 
                 # print average reward till last episode
                 print_avg_reward = print_running_reward / print_running_episodes
-                print_avg_reward = round(print_avg_reward.numpy()[0],2)
+                #print_avg_reward = round(print_avg_reward.numpy()[0],2)
+                if (type(print_avg_reward) != 'torch.FloatTensor'):
+                    print_avg_reward = round(print_avg_reward,2)
+                else:
+                    print_avg_reward = round(print_avg_reward.numpy()[0], 2)
+
 
                 print("Episode : {} \t\t Timestep : {} \t\t Average Reward : {}".format(i_episode, time_step, print_avg_reward))
-
+                print("orig label: {} \t\t new label: {} \t\t prob: {} \t\t l0_dist: {}".format(env.original_label, env.label, env.prob, env.L0_dist))
+                print("terminated: "+str(env.terminated))
                 print_running_reward = 0
                 print_running_episodes = 0
 

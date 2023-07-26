@@ -19,6 +19,7 @@ class TabAdvEnv(gym.Env):
     self.target_models = model
     self.n = self.sample.shape[1]
     self.state = self.sample.clone().flatten()
+    self.L0_dist = 0
 
 
     # self.changes = [change_up(), change_down()]
@@ -67,7 +68,7 @@ class TabAdvEnv(gym.Env):
     #action_space = tuple(action_space)
 
     # self.action_space = spaces.Box(low=np.array(self.feature_min),high=np.array(self.feature_max), dtype=np.float32)
-    self.action_space = spaces.Box(low=-1, high=1, shape=(self.n,), dtype=np.float32)
+    self.action_space = spaces.Box(low=-100, high=100, shape=(self.n,), dtype=np.float32)
     #self.action_space = spaces.Dict(action_space)
     # self.action_space = spaces.Dict(action_space)
     # low_state = np.array([0, -1], dtype=np.float32)
@@ -147,7 +148,8 @@ class TabAdvEnv(gym.Env):
     L_inf_dist = torch.linalg.norm(self.original_sample - self.sample, ord=torch.inf)
     # LO = torch.sum(self.original_sample - self.sample, axis=1)
     # torch.nanmean()
-    L0_dist = (self.original_sample != self.sample).sum(axis=1)
+    self.L0_dist = (self.original_sample != self.sample).sum(axis=1)
+    
     if self.original_label == 1:
         if self.prob[1] < 0.5:
             reward = 1
@@ -163,7 +165,7 @@ class TabAdvEnv(gym.Env):
         elif self.prob[1] <= self.original_prob[1]:
             reward = -1
 
-    objective = L0_dist/self.n + reward
+    objective =  reward #self.L0_dist/self.n +
 
 
     # we want to maximzie this, maybe do some hyper parameter for it
