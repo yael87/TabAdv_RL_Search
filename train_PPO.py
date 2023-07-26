@@ -79,7 +79,7 @@ if __name__ == '__main__':
     save_model_freq = int(2e4)      # save model frequency (in num timesteps)
 
     #TODO: define action_std
-    action_std = 0.1               # starting std for action distribution (Multivariate Normal)
+    action_std = 0.6               # starting std for action distribution (Multivariate Normal)
 
 
     #####################################################
@@ -96,8 +96,10 @@ if __name__ == '__main__':
     eps_clip = 0.2              # clip parameter for PPO
     gamma = 0.99                # discount factor
 
-    lr_actor = 0.0003       # learning rate for actor network
-    lr_critic = 0.001       # learning rate for critic network
+    #lr_actor = 0.0003       # learning rate for actor network
+    #lr_critic = 0.001       # learning rate for critic network
+    lr_actor = 1.       # learning rate for actor network
+    lr_critic = 1.       # learning rate for critic network
 
     random_seed = 0         # set random seed if required (0 = no random seed)
 
@@ -281,9 +283,9 @@ if __name__ == '__main__':
 
                 # log average reward till last episode
                 log_avg_reward = log_running_reward / log_running_episodes
-                if (type(log_avg_reward) != 'torch.FloatTensor'):
+                try:
                     log_avg_reward = round(log_avg_reward,4)
-                else:
+                except:
                     log_avg_reward = round(log_avg_reward.numpy()[0], 4)
 
                 log_f.write('{},{},{}\n'.format(i_episode, time_step, log_avg_reward))
@@ -298,9 +300,9 @@ if __name__ == '__main__':
                 # print average reward till last episode
                 print_avg_reward = print_running_reward / print_running_episodes
                 #print_avg_reward = round(print_avg_reward.numpy()[0],2)
-                if (type(print_avg_reward) != 'torch.FloatTensor'):
+                try:
                     print_avg_reward = round(print_avg_reward,2)
-                else:
+                except:
                     print_avg_reward = round(print_avg_reward.numpy()[0], 2)
 
 
