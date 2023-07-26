@@ -67,7 +67,7 @@ class TabAdvEnv(gym.Env):
     #action_space = tuple(action_space)
 
     # self.action_space = spaces.Box(low=np.array(self.feature_min),high=np.array(self.feature_max), dtype=np.float32)
-    self.action_space = spaces.Box(low=0, high=2, shape=(self.n,), dtype=np.float32)
+    self.action_space = spaces.Box(low=-1, high=1, shape=(self.n,), dtype=np.float32)
     #self.action_space = spaces.Dict(action_space)
     # self.action_space = spaces.Dict(action_space)
     # low_state = np.array([0, -1], dtype=np.float32)
@@ -121,10 +121,12 @@ class TabAdvEnv(gym.Env):
         for i, action_component in enumerate(action):
             if i in self.integer_features:
                 # If the feature is an integer, round the action component to the nearest integer
-                modified_sample[i] == round(action_component)
+                modified_sample[i] += round(action_component)
+                modified_sample[i] = torch.clamp(modified_sample[i], self.feature_min[i], self.feature_max[i])
             else:
                 # If the feature is a float, apply the action component directly
-                modified_sample[i] == action_component
+                modified_sample[i] += action_component
+                modified_sample[i] = torch.clamp(modified_sample[i], self.feature_min[i], self.feature_max[i])
 
 
         # self.sample = self.changes[action](self.sample)

@@ -281,7 +281,10 @@ if __name__ == '__main__':
 
                 # log average reward till last episode
                 log_avg_reward = log_running_reward / log_running_episodes
-                log_avg_reward = round(log_avg_reward.numpy()[0], 4)
+                if (log_avg_reward.type() != 'torch.FloatTensor'):
+                    log_avg_reward = round(log_avg_reward,4)
+                else:
+                    log_avg_reward = round(log_avg_reward.numpy()[0], 4)
 
                 log_f.write('{},{},{}\n'.format(i_episode, time_step, log_avg_reward))
                 log_f.flush()
