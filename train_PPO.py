@@ -98,7 +98,7 @@ if __name__ == '__main__':
 
     #lr_actor = 0.0003       # learning rate for actor network
     #lr_critic = 0.001       # learning rate for critic network
-    lr_actor = 1.       # learning rate for actor network
+    lr_actor = 0.1      # learning rate for actor network
     lr_critic = 1.       # learning rate for critic network
 
     random_seed = 0         # set random seed if required (0 = no random seed)
@@ -250,11 +250,18 @@ if __name__ == '__main__':
     time_step = 0
     i_episode = 0
 
+    x_ind=1
+    done = False
 
     # training loop
-    while time_step <= max_training_timesteps:
+    while time_step <= max_training_timesteps or x_ind<5: 
+        if done and x_ind < len(x_adv):
+            state = env.reset(x_adv[x_ind:x_ind+1], y_adv[x_ind:x_ind+1])
+            print("new sample: "+str(x_ind))
+            x_ind+=1
 
-        state = env.reset()
+        else:
+            state = env.reset()
         current_ep_reward = 0
 
         for t in range(1, max_ep_len +1):
@@ -296,9 +303,11 @@ if __name__ == '__main__':
 
             # printing average reward
             if time_step % print_freq == 0:
+            #if (True): #time_step % print_freq == 0:
 
                 # print average reward till last episode
                 print_avg_reward = print_running_reward / print_running_episodes
+                #print_avg_reward = print_running_reward
                 #print_avg_reward = round(print_avg_reward.numpy()[0],2)
                 try:
                     print_avg_reward = round(print_avg_reward,2)
@@ -332,6 +341,8 @@ if __name__ == '__main__':
         log_running_episodes += 1
 
         i_episode += 1
+
+        
 
 
     log_f.close()

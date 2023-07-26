@@ -46,6 +46,9 @@ class TabAdvEnv(gym.Env):
         elif row['const'] == 'b':
             self.feature_min.append(0)
             self.feature_max.append(1)
+        elif row['const'] == 'd':
+            self.feature_min.append(self.sample[0][i])
+            self.feature_max.append(self.sample[0][i])
         else:
             self.feature_min.append(-np.inf)
             self.feature_max.append(np.inf)
@@ -165,7 +168,7 @@ class TabAdvEnv(gym.Env):
         elif self.prob[1] <= self.original_prob[1]:
             reward = -1
 
-    objective =  reward #- self.L0_dist/self.n
+    objective =  reward - 0.05#- self.L0_dist/self.n
 
 
     # we want to maximzie this, maybe do some hyper parameter for it
@@ -187,7 +190,7 @@ class TabAdvEnv(gym.Env):
     return self.state, self.reward, self.terminated, info
 
 
-  def reset(self, seed=None, options=None):#init the env ()
+  def reset(self, x_adv=None, y_adv=None, seed=None, options=None):#init the env ()
         #super().reset(seed=seed, options=options)
         # super().reset()
         self.number_of_changes = 1000000
@@ -197,11 +200,22 @@ class TabAdvEnv(gym.Env):
         # self.state[0] = self.label
         # self.state[1] = np.abs(0.5 - self.prob) * sign
 
-        self.sample = self.original_sample.clone()
-        self.label = self.original_label
-        self.prob = self.original_prob.copy()
-        self.total_reward = 0
-        self.state = self.sample.clone().flatten()
+        if (x_adv):
+            self.sample = x_adv.type(torch.FloatTensor)
+            self.label = int(y_adv['pred'][0])
+            self.prob = self.target_models.predict_proba(self.sample)[0]
+            self.state = self.sample.clone().flatten()
+            self.L0_dist = 0
+            self.total_reward = 0
+
+        else:
+            self.sample = self.original_sample.clone()
+            self.label = self.original_label
+            self.prob = self.original_prob.copy()
+            self.total_reward = 0
+            self.state = self.sample.clone().flatten()
+            self.L0_dist = 0
+
         return self.state
 
   def render(self):
