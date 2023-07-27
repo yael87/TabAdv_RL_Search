@@ -204,9 +204,9 @@ class TabAdvEnv(gym.Env):
         # self.state[0] = self.label
         # self.state[1] = np.abs(0.5 - self.prob) * sign
 
-        if (x_adv):
+        if (x_adv != None):
             self.sample = x_adv.type(torch.FloatTensor)
-            self.label = int(y_adv['pred'][0])
+            self.label = int(y_adv['pred'])
             self.prob = self.target_models.predict_proba(self.sample)[0]
             self.state = self.sample.clone().flatten()
             self.L0_dist = 0

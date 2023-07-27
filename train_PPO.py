@@ -55,8 +55,8 @@ if __name__ == '__main__':
     #process(dataset_name, raw_data_path, TorchMinMaxScaler)
     #train_models(data_path, datasets)
     #train_REG_models(dataset_name, data_path, datasets) 
-    x_adv = datasets.get('x_test').iloc[:1] #first sample
-    y_adv = datasets.get('y_test').iloc[:1] #first sample
+    x_adv = datasets.get('x_test') #first sample
+    y_adv = datasets.get('y_test') #first sample
     # Get models
     GB, LGB, XGB, RF = load_target_models(data_path, models_path)
 
@@ -68,11 +68,11 @@ if __name__ == '__main__':
 
     ####### initialize environment hyperparameters ######
 
-    env_name = "TabularAdv-v0"      # environment name
+    env_name = "TabularAdv-v1"      # environment name
     has_continuous_action_space = True #False
 
     max_ep_len = 400                    # max timesteps in one episode
-    max_training_timesteps = int(1e5)   # break training loop if timeteps > max_training_timesteps
+    max_training_timesteps = int(1e5)   # break training loop if timeteps > max_training_timesteps (100000)
 
     print_freq = max_ep_len * 4     # print avg reward in the interval (in num timesteps)
     log_freq = max_ep_len * 2       # log avg reward in the interval (in num timesteps)
@@ -110,7 +110,7 @@ if __name__ == '__main__':
     # print("training environment name : " + env_name)
 
     #env = gym.make(env_name)
-    env = TabAdvEnv(GB, torch.from_numpy(np.array(x_adv)), y_adv, raw_data_path)
+    env = TabAdvEnv(GB, torch.from_numpy(np.array(x_adv.iloc[:1])), y_adv.iloc[:1], raw_data_path)
 
     # state space dimension
     state_dim = env.observation_space.shape[0]
@@ -254,9 +254,9 @@ if __name__ == '__main__':
     done = False
 
     # training loop
-    while time_step <= max_training_timesteps or x_ind<5: 
-        if done and x_ind < len(x_adv):
-            state = env.reset(x_adv[x_ind:x_ind+1], y_adv[x_ind:x_ind+1])
+    while time_step <= max_training_timesteps and x_ind<5: 
+        if done and x_ind < x_adv.shape[0]:
+            state = env.reset(torch.from_numpy(np.array(x_adv.iloc[x_ind:x_ind+1])), y_adv.iloc[x_ind:x_ind+1])
             print("new sample: "+str(x_ind))
             x_ind+=1
 
