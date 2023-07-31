@@ -68,7 +68,7 @@ if __name__ == '__main__':
 
     ####### initialize environment hyperparameters ######
 
-    env_name = "TabularAdv-v1"      # environment name
+    env_name = "TabularAdv-v2"      # environment name
     has_continuous_action_space = True #False
 
     max_ep_len = 400                    # max timesteps in one episode
@@ -254,12 +254,13 @@ if __name__ == '__main__':
     done = False
 
     # training loop
-    while time_step <= max_training_timesteps and x_ind<5: 
+    while time_step <= max_training_timesteps and (x_ind<10 or (x_ind>=400 and x_ind<410)) : #take 10 samples of label 0 and 10 from label 1
         if done and x_ind < x_adv.shape[0]:
             state = env.reset(torch.from_numpy(np.array(x_adv.iloc[x_ind:x_ind+1])), y_adv.iloc[x_ind:x_ind+1])
             print("new sample: "+str(x_ind))
             x_ind+=1
-
+            if x_ind == 10:
+                x_ind = 400
         else:
             state = env.reset()
         current_ep_reward = 0

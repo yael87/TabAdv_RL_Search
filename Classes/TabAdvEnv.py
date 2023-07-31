@@ -155,20 +155,20 @@ class TabAdvEnv(gym.Env):
     
     if self.original_label == 1:
         if self.prob[1] < 0.5:
-            reward = 1
+            reward = 100
         elif self.prob[1] < self.original_prob[1]:
-            reward = 0.5
+            reward = 1 - (self.prob[1] - 0.5) #0.5
         elif self.prob[1] > self.original_prob[1]:
-           reward = -0.5
+           reward = - 1 + (1- self.prob[1])
         elif self.prob[1] == self.original_prob[1]:
             reward = -1
     else:
         if self.prob[1] > 0.5:
-            reward = 1
+            reward = 100
         elif self.prob[1] > self.original_prob[1]:
-            reward = 0.5
+            reward = 1 - (0.5 - self.prob[1])
         elif self.prob[1] < self.original_prob[1]:
-            reward = -0.5
+            reward = - 1 + (self.prob[1])
         elif self.prob[1] == self.original_prob[1]:
             reward = -1
 
