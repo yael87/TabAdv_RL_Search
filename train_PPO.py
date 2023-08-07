@@ -5,13 +5,12 @@ from datetime import datetime
 
 import torch
 import numpy as np
-import configparser
 
 import gym
 
 from PPO import PPO
 
-from Classes.TabAdvEnv import TabAdvEnv
+from Classes.TabAdvEnv import *
 # prepare data and models
 from Utils.data_utils import preprocess_credit, drop_corolated_target, split_to_datasets, preprocess_top100, preprocess_HCDR, \
                             preprocess_ICU, preprocess_HATE,rearrange_columns, rearrange_columns_edittable, over_sampling, \
@@ -20,12 +19,7 @@ from Utils.data_utils import preprocess_credit, drop_corolated_target, split_to_
 from Utils.models_utils import load_target_models, load_surrogate_model, train_GB_model, train_LGB_model, train_RF_model, train_XGB_model,  \
                             train_REGRESSOR_model, compute_importance
 
-def get_config():
-    config = configparser.ConfigParser()
-    #config.read(sys.argv[1])
-    config.read('configurations.txt')
-    config = config['DEFAULT']
-    return config
+
 
 
 if __name__ == '__main__':
@@ -68,7 +62,7 @@ if __name__ == '__main__':
 
     ####### initialize environment hyperparameters ######
 
-    env_name = "TabularAdv-v2"      # environment name
+    env_name = "TabularAdv-v3"      # environment name
     has_continuous_action_space = True #False
 
     max_ep_len = 400                    # max timesteps in one episode
@@ -98,8 +92,8 @@ if __name__ == '__main__':
 
     #lr_actor = 0.0003       # learning rate for actor network
     #lr_critic = 0.001       # learning rate for critic network
-    lr_actor = 1.      # learning rate for actor network
-    lr_critic = 1.       # learning rate for critic network
+    lr_actor = 0.6      # learning rate for actor network
+    lr_critic = 0.6       # learning rate for critic network
 
     random_seed = 0         # set random seed if required (0 = no random seed)
 

@@ -4,8 +4,15 @@ import pandas as pd
 import gym as gym
 from gym import spaces as spaces
 import torch
+import configparser
 
 
+def get_config():
+    config = configparser.ConfigParser()
+    #config.read(sys.argv[1])
+    config.read('configurations.txt')
+    config = config['DEFAULT']
+    return config
 
 class TabAdvEnv(gym.Env):
   """Custom Environment that follows gym interface"""
@@ -206,7 +213,7 @@ class TabAdvEnv(gym.Env):
 
         if (x_adv != None):
             self.sample = x_adv.type(torch.FloatTensor)
-            self.label = int(y_adv['pred'])
+            self.label = int(y_adv['pred'].iloc[0])
             self.prob = self.target_models.predict_proba(self.sample)[0]
             self.state = self.sample.clone().flatten()
             self.L0_dist = 0
