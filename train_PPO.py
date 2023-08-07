@@ -19,6 +19,8 @@ from Utils.data_utils import preprocess_credit, drop_corolated_target, split_to_
 from Utils.models_utils import load_target_models, load_surrogate_model, train_GB_model, train_LGB_model, train_RF_model, train_XGB_model,  \
                             train_REGRESSOR_model, compute_importance
 
+from Utils.attack_utils import get_attack_set, get_balanced_attack_set
+
 
 
 
@@ -51,8 +53,19 @@ if __name__ == '__main__':
     #train_REG_models(dataset_name, data_path, datasets) 
     x_adv = datasets.get('x_test') #first sample
     y_adv = datasets.get('y_test') #first sample
+
+    
     # Get models
     GB, LGB, XGB, RF = load_target_models(data_path, models_path)
+    target_models = [GB, XGB, LGB, RF]
+    scaler = None
+
+    attack_x_clean, attack_y_clean = get_attack_set(datasets, target_models, None, scaler ,data_path)
+    attack_size = 300
+    x_adv, attack_y = get_balanced_attack_set(dataset_name, attack_x_clean, attack_y_clean, attack_size, seed)
+    y_adv = attack_y.transpose().values.tolist()[0]
+    #true_label_m = GB.predict(attack_x).tolist()
+    
 
     print("============================================================================================")
 
@@ -62,15 +75,15 @@ if __name__ == '__main__':
 
     ####### initialize environment hyperparameters ######
 
-    env_name = "TabularAdv-v3"      # environment name
+    env_name = "TabularAdv-v101"      # environment name
     has_continuous_action_space = True #False
 
     max_ep_len = 400                    # max timesteps in one episode
-    max_training_timesteps = int(1e5)   # break training loop if timeteps > max_training_timesteps (100000)
+    max_training_timesteps = int(2e4)#(1e5)   # break training loop if timeteps > max_training_timesteps (100000)
 
     print_freq = max_ep_len * 4     # print avg reward in the interval (in num timesteps)
     log_freq = max_ep_len * 2       # log avg reward in the interval (in num timesteps)
-    save_model_freq = int(2e4)      # save model frequency (in num timesteps)
+    save_model_freq = int(1e3)      # save model frequency (in num timesteps)
 
     #TODO: define action_std
     action_std = 0.6               # starting std for action distribution (Multivariate Normal)
@@ -104,7 +117,7 @@ if __name__ == '__main__':
     # print("training environment name : " + env_name)
 
     #env = gym.make(env_name)
-    env = TabAdvEnv(GB, torch.from_numpy(np.array(x_adv.iloc[:1])), y_adv.iloc[:1], raw_data_path)
+    env = TabAdvEnv(GB, torch.from_numpy(np.array(x_adv.iloc[:1])), y_adv[0], raw_data_path)
 
     # state space dimension
     state_dim = env.observation_space.shape[0]
@@ -244,101 +257,117 @@ if __name__ == '__main__':
     time_step = 0
     i_episode = 0
 
-    x_ind=1
+    x_ind=0
     done = False
+    time = 0
+    success = 0
 
     # training loop
-    while time_step <= max_training_timesteps and (x_ind<10 or (x_ind>=400 and x_ind<410)) : #take 10 samples of label 0 and 10 from label 1
-        if done and x_ind < x_adv.shape[0]:
-            state = env.reset(torch.from_numpy(np.array(x_adv.iloc[x_ind:x_ind+1])), y_adv.iloc[x_ind:x_ind+1])
-            print("new sample: "+str(x_ind))
-            x_ind+=1
-            if x_ind == 10:
-                x_ind = 400
-        else:
-            state = env.reset()
-        current_ep_reward = 0
+    while (x_ind<10 or (x_ind>=400 and x_ind<410)) : #take 10 samples of label 0 and 10 from label 1
+        state = env.reset(torch.from_numpy(np.array(x_adv.iloc[x_ind:x_ind+1])), y_adv[x_ind])
+        print("new sample: "+str(x_ind))
+        x_ind+=1
+        if x_ind == 10:
+            x_ind = 400
+        time_step = 0
 
-        for t in range(1, max_ep_len +1):
+        while time_step <= max_training_timesteps : 
+            if done and x_ind < x_adv.shape[0] or time > 20000:
+                if done:
+                    success += 1
+                time = 0 
+                state = env.reset(torch.from_numpy(np.array(x_adv.iloc[x_ind:x_ind+1])), y_adv[x_ind])
+                
+            else:
+                state = env.reset()
+                time += 1
+            current_ep_reward = 0
 
-            # select action with policy
-            action = ppo_agent.select_action(state)
-            state, reward, done, _ = env.step(action)
+            for t in range(1, max_ep_len +1):
 
-            # saving reward and is_terminals
-            ppo_agent.buffer.rewards.append(reward)
-            ppo_agent.buffer.is_terminals.append(done)
+                # select action with policy
+                action = ppo_agent.select_action(state) #torch.from_numpy(state))
+                state, reward, done, _ = env.step(action)
 
-            time_step += 1
-            current_ep_reward += reward
+                # saving reward and is_terminals
+                ppo_agent.buffer.rewards.append(reward)
+                ppo_agent.buffer.is_terminals.append(done)
 
-            # update PPO agent
-            if time_step % update_timestep == 0:
-                ppo_agent.update()
+                time_step += 1
+                current_ep_reward += reward
 
-            # if continuous action space; then decay action std of ouput action distribution
-            #if has_continuous_action_space and time_step % action_std_decay_freq == 0:
-            #    ppo_agent.decay_action_std(action_std_decay_rate, min_action_std)
+                # update PPO agent
+                if time_step % update_timestep == 0:
+                    ppo_agent.update()
 
-            # log in logging file
-            if time_step % log_freq == 0:
+                # if continuous action space; then decay action std of ouput action distribution
+                #if has_continuous_action_space and time_step % action_std_decay_freq == 0:
+                #    ppo_agent.decay_action_std(action_std_decay_rate, min_action_std)
 
-                # log average reward till last episode
-                log_avg_reward = log_running_reward / log_running_episodes
-                try:
-                    log_avg_reward = round(log_avg_reward,4)
-                except:
-                    log_avg_reward = round(log_avg_reward.numpy()[0], 4)
+                # log in logging file
+                if time_step % log_freq == 0:
 
-                log_f.write('{},{},{}\n'.format(i_episode, time_step, log_avg_reward))
-                log_f.flush()
+                    # log average reward till last episode
+                    log_avg_reward = log_running_reward / log_running_episodes
+                    try:
+                        log_avg_reward = round(log_avg_reward,4)
+                    except:
+                        log_avg_reward = round(log_avg_reward.numpy()[0], 4)
 
-                log_running_reward = 0
-                log_running_episodes = 0
+                    log_f.write('{},{},{}\n'.format(i_episode, time_step, log_avg_reward))
+                    log_f.flush()
 
-            # printing average reward
-            if time_step % print_freq == 0:
-            #if (True): #time_step % print_freq == 0:
+                    log_running_reward = 0
+                    log_running_episodes = 0
 
-                # print average reward till last episode
-                print_avg_reward = print_running_reward / print_running_episodes
-                #print_avg_reward = print_running_reward
-                #print_avg_reward = round(print_avg_reward.numpy()[0],2)
-                try:
-                    print_avg_reward = round(print_avg_reward,2)
-                except:
-                    print_avg_reward = round(print_avg_reward.numpy()[0], 2)
+                # printing average reward
+                if time_step % print_freq == 0:
+                #if (True): #time_step % print_freq == 0:
+
+                    # print average reward till last episode
+                    print_avg_reward = print_running_reward / print_running_episodes
+                    #print_avg_reward = print_running_reward
+                    #print_avg_reward = round(print_avg_reward.numpy()[0],2)
+                    try:
+                        print_avg_reward = round(print_avg_reward,2)
+                    except:
+                        print_avg_reward = round(print_avg_reward.numpy()[0], 2)
 
 
-                print("Episode : {} \t\t Timestep : {} \t\t Average Reward : {}".format(i_episode, time_step, print_avg_reward))
-                print("orig label: {} \t\t new label: {} \t\t prob: {} \t\t l0_dist: {}".format(env.original_label, env.label, env.prob, env.L0_dist))
-                print("terminated: "+str(env.terminated))
-                print_running_reward = 0
-                print_running_episodes = 0
+                    print("Episode : {} \t\t Timestep : {} \t\t Average Reward : {}".format(i_episode, time_step, print_avg_reward))
+                    print("orig label: {} \t\t new label: {} \t\t prob: {} \t\t l0_dist: {}".format(env.original_label, env.label, env.prob, env.L0_dist))
+                    print("terminated: "+str(env.terminated))
+                    print_running_reward = 0
+                    print_running_episodes = 0
 
-            # save model weights
-            if time_step % save_model_freq == 0:
-                print("--------------------------------------------------------------------------------------------")
-                print("saving model at : " + checkpoint_path)
-                ppo_agent.save(checkpoint_path)
-                print("model saved")
-                print("Elapsed Time  : ", datetime.now().replace(microsecond=0) - start_time)
-                print("--------------------------------------------------------------------------------------------")
+                # save model weights
+                if time_step % save_model_freq == 0:
+                    print("--------------------------------------------------------------------------------------------")
+                    print("saving model at : " + checkpoint_path)
+                    ppo_agent.save(checkpoint_path)
+                    print("model saved")
+                    print("Elapsed Time  : ", datetime.now().replace(microsecond=0) - start_time)
+                    print("--------------------------------------------------------------------------------------------")
 
-            # break; if the episode is over
-            if done:
-                break
+                # break; if the episode is over
+                if done:
+                    break
 
-        print_running_reward += current_ep_reward
-        print_running_episodes += 1
+            print_running_reward += current_ep_reward
+            print_running_episodes += 1
 
-        log_running_reward += current_ep_reward
-        log_running_episodes += 1
+            log_running_reward += current_ep_reward
+            log_running_episodes += 1
 
-        i_episode += 1
+            i_episode += 1
 
-        
-
+    ## in case we didnt get to timesep % save_model_freq  == 0
+    print("--------------------------------------------------------------------------------------------")
+    print("saving model at : " + checkpoint_path)
+    ppo_agent.save(checkpoint_path)
+    print("model saved")
+    print("Elapsed Time  : ", datetime.now().replace(microsecond=0) - start_time)
+    print("--------------------------------------------------------------------------------------------")
 
     log_f.close()
     env.close()
@@ -353,8 +382,5 @@ if __name__ == '__main__':
     print("Finished training at (GMT) : ", end_time)
     print("Total training time  : ", end_time - start_time)
     print("============================================================================================")
-
-
-
-
-
+    print("Total success samples  : ", success)
+    print("============================================================================================")

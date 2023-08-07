@@ -1,10 +1,10 @@
 import numpy as np
 import pandas as pd
-from art.attacks.evasion import AdversarialPatchPyTorch
-from Attacks.HopSkipJump_Tabular import HopSkipJump
-from Attacks.Boundary_Tabular import BoundaryAttack
+#from art.attacks.evasion import AdversarialPatchPyTorch
+#from Attacks.HopSkipJump_Tabular import HopSkipJump
+#from Attacks.Boundary_Tabular import BoundaryAttack
 
-from Attacks.Surrogate import SurrogateAttack
+#from Attacks.Surrogate import SurrogateAttack
 from sklearn.preprocessing import LabelEncoder, MinMaxScaler, StandardScaler
 from sklearn import preprocessing
 import pickle
@@ -448,8 +448,9 @@ def get_attack_set(datasets, target_models, surr_model, scaler ,data_path):
     equal_preds = np.ones_like(attack_y.to_numpy().T)
 
     #extract only samples that predicted correct by surrogate
-    pred_original_surr = torch.sigmoid(surr_model(torch.from_numpy(scaler.transform(attack_x)).float())).round().detach().numpy().reshape(1,-1)
-    equal_preds[pred_original_surr != attack_y.T] = 0
+    if surr_model != None:
+        pred_original_surr = torch.sigmoid(surr_model(torch.from_numpy(scaler.transform(attack_x)).float())).round().detach().numpy().reshape(1,-1)
+        equal_preds[pred_original_surr != attack_y.T] = 0
 
     #extract only samples that predicted correct by all target models
     for j, target in enumerate(target_models):

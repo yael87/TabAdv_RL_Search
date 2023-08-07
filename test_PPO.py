@@ -13,6 +13,7 @@ from Utils.data_utils import preprocess_credit, drop_corolated_target, split_to_
 from Utils.models_utils import load_target_models, load_surrogate_model, train_GB_model, train_LGB_model, train_RF_model, train_XGB_model,  \
                             train_REGRESSOR_model, compute_importance
 
+from Utils.attack_utils import get_attack_set, get_balanced_attack_set
 
 #################################### Testing ###################################
 def test():
@@ -45,6 +46,14 @@ def test():
     y_adv = datasets.get('y_test')  # first sample
     # Get models
     GB, LGB, XGB, RF = load_target_models(data_path, models_path)
+    target_models = [GB, XGB, LGB, RF]
+    scaler = None
+
+    attack_x_clean, attack_y_clean = get_attack_set(datasets, target_models, None, scaler ,data_path)
+    attack_size = 300
+    x_adv, attack_y = get_balanced_attack_set(dataset_name, attack_x_clean, attack_y_clean, attack_size, seed)
+    y_adv = attack_y.transpose().values.tolist()[0]
+
     print("============================================================================================")
 
     ################## hyperparameters ##################
@@ -83,7 +92,7 @@ def test():
     # lr_critic = 0.001           # learning rate for critic
 
     ########################### Our Env ##########################
-    env_name = "TabularAdv-v3"  # environment name
+    env_name = "TabularAdv-v11"  # environment name
     has_continuous_action_space = True  # False
 
     max_ep_len = 400  # max timesteps in one episode
@@ -110,10 +119,10 @@ def test():
     render = False  # render environment on screen
     frame_delay = 0  # if required; add delay b/w frames
 
-    total_test_episodes = 10  # total num of testing episodes
+    total_test_episodes = 20  # total num of testing episodes
 ########################################################################
     # env = gym.make(env_name)
-    env = TabAdvEnv(GB, torch.from_numpy(np.array(x_adv.iloc[:1])), y_adv.iloc[:1], raw_data_path)
+    env = TabAdvEnv(GB, torch.from_numpy(np.array(x_adv.iloc[50:51])), y_adv[50], raw_data_path)
 
     # state space dimension
     state_dim = env.observation_space.shape[0]
@@ -150,6 +159,11 @@ def test():
             action = ppo_agent.select_action(state)
             state, reward, done, _ = env.step(action)
             ep_reward += reward
+
+            # YAEL
+            adv_label = GB.predict(state.reshape(1, -1))
+            print("adv_label: {}, orig label: {}".format(adv_label, y_adv[50]))
+            #print("adv sample: ", state)
 
             if render:
                 env.render()

@@ -21,7 +21,7 @@ class TabAdvEnv(gym.Env):
     # init action that we can take
     super(TabAdvEnv, self).__init__()
     self.sample = x_adv.type(torch.FloatTensor)
-    self.label = int(y_adv['pred'][0])
+    self.label = int(y_adv)
     self.prob = model.predict_proba(self.sample)[0]
     self.target_models = model
     self.n = self.sample.shape[1]
@@ -78,7 +78,7 @@ class TabAdvEnv(gym.Env):
     #action_space = tuple(action_space)
 
     # self.action_space = spaces.Box(low=np.array(self.feature_min),high=np.array(self.feature_max), dtype=np.float32)
-    self.action_space = spaces.Box(low=-100, high=100, shape=(self.n,), dtype=np.float32)
+    self.action_space = spaces.Box(low=-1000, high=1000, shape=(self.n,), dtype=np.float32)
     #self.action_space = spaces.Dict(action_space)
     # self.action_space = spaces.Dict(action_space)
     # low_state = np.array([0, -1], dtype=np.float32)
@@ -162,22 +162,23 @@ class TabAdvEnv(gym.Env):
     
     if self.original_label == 1:
         if self.prob[1] < 0.5:
-            reward = 100
+            reward = 10000
         elif self.prob[1] < self.original_prob[1]:
-            reward = 1 - (self.prob[1] - 0.5) #0.5
+            reward = 100 - (self.prob[1] - 0.5) * 100 #0.5
         elif self.prob[1] > self.original_prob[1]:
-           reward = - 1 + (1- self.prob[1])
+           reward = 50 * ( self.original_prob[1] / self.prob[1]) -50
         elif self.prob[1] == self.original_prob[1]:
-            reward = -1
+            reward = -100
     else:
         if self.prob[1] > 0.5:
-            reward = 100
+            reward = 10000
         elif self.prob[1] > self.original_prob[1]:
-            reward = 1 - (0.5 - self.prob[1])
+            reward = 100 - (0.5 - self.prob[1]) * 100
         elif self.prob[1] < self.original_prob[1]:
-            reward = - 1 + (self.prob[1])
+            a = 500 *( self.prob[1] / self.original_prob[1])
+            reward = 50 * ( self.prob[1] / self.original_prob[1]) -50
         elif self.prob[1] == self.original_prob[1]:
-            reward = -1
+            reward = -100
 
     objective =  reward #- self.L0_dist/self.n
 
@@ -192,7 +193,7 @@ class TabAdvEnv(gym.Env):
     self.reward = objective
     # double chack!!!!!!!!!!!!
     if self.terminated:
-        self.reward = self.total_reward
+        self.reward = self.total_reward + objective
 
     self.total_reward += self.reward
     self.state = self.sample.clone().flatten()
@@ -213,7 +214,7 @@ class TabAdvEnv(gym.Env):
 
         if (x_adv != None):
             self.sample = x_adv.type(torch.FloatTensor)
-            self.label = int(y_adv['pred'].iloc[0])
+            self.label = int(y_adv)
             self.prob = self.target_models.predict_proba(self.sample)[0]
             self.state = self.sample.clone().flatten()
             self.L0_dist = 0
