@@ -20,7 +20,7 @@ from Utils.models_utils import load_target_models, load_surrogate_model, train_G
                             train_REGRESSOR_model, compute_importance
 
 from Utils.attack_utils import get_attack_set, get_balanced_attack_set
-
+import pickle as pkl
 
 
 
@@ -60,7 +60,8 @@ if __name__ == '__main__':
     target_models = [GB, XGB, LGB, RF]
     scaler = None
 
-    attack_x_clean, attack_y_clean = get_attack_set(datasets, target_models, None, scaler ,data_path)
+    #attack_x_clean, attack_y_clean = get_attack_set(datasets, target_models, None, scaler ,data_path)
+    attack_x_clean, attack_y_clean = pkl.load(open(data_path+"/attack_x_clean.pkl", 'rb' )), pkl.load(open(data_path+"/attack_y_clean.pkl", 'rb' ))
     attack_size = 300
     x_adv, attack_y = get_balanced_attack_set(dataset_name, attack_x_clean, attack_y_clean, attack_size, seed)
     y_adv = attack_y.transpose().values.tolist()[0]
@@ -75,11 +76,11 @@ if __name__ == '__main__':
 
     ####### initialize environment hyperparameters ######
 
-    env_name = "TabularAdv-v202"      # environment name
+    env_name = "TabularAdv-v15"      # environment name
     has_continuous_action_space = True #False
 
     max_ep_len = 400                    # max timesteps in one episode
-    max_training_timesteps = int(1e4)#(1e5)   # break training loop if timeteps > max_training_timesteps (100000)
+    max_training_timesteps = int(1e5)#(1e5)   # break training loop if timeteps > max_training_timesteps (100000)
 
     print_freq = max_ep_len * 4     # print avg reward in the interval (in num timesteps)
     log_freq = max_ep_len * 2       # log avg reward in the interval (in num timesteps)
@@ -106,7 +107,7 @@ if __name__ == '__main__':
     #lr_actor = 0.0003       # learning rate for actor network
     #lr_critic = 0.001       # learning rate for critic network
     lr_actor = 0.6      # learning rate for actor network
-    lr_critic = 0.6       # learning rate for critic network
+    lr_critic = 0.6     # learning rate for critic network
 
     random_seed = 0         # set random seed if required (0 = no random seed)
 
@@ -263,24 +264,31 @@ if __name__ == '__main__':
     success = 0
 
     # training loop
-    while (x_ind<10 or (x_ind>=400 and x_ind<410)) : #take 10 samples of label 0 and 10 from label 1
+    ind = [0,1,2,3,4,455,456,457,458,459]
+    for i in range(15):
+        x_ind = np.random.choice(ind)
+        
+    #while (x_ind<5 or (x_ind>=400 and x_ind<45)) : #take 10 samples of label 0 and 10 from label 1
         state = env.reset(torch.from_numpy(np.array(x_adv.iloc[x_ind:x_ind+1])), y_adv[x_ind])
         print("new sample: "+str(x_ind))
-        x_ind+=1
-        if x_ind == 10:
-            x_ind = 400
+        
         time_step = 0
 
         while time_step <= max_training_timesteps : 
-            if done and x_ind < x_adv.shape[0] or time > 20000:
+            #if done and x_ind < x_adv.shape[0] or time > 20000:
+            #    if done:
+            #        success += 1
+            #    time = 0 
+            #    state = env.reset(torch.from_numpy(np.array(x_adv.iloc[x_ind:x_ind+1])), y_adv[x_ind])
+                
+            #else:
+            if done or time > 20000:
                 if done:
                     success += 1
-                time = 0 
-                state = env.reset(torch.from_numpy(np.array(x_adv.iloc[x_ind:x_ind+1])), y_adv[x_ind])
-                
-            else:
                 state = env.reset()
-                time += 1
+                time = 0
+            
+            time += 1
             current_ep_reward = 0
 
             for t in range(1, max_ep_len +1):

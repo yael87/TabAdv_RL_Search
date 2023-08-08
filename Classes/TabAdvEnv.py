@@ -99,6 +99,8 @@ class TabAdvEnv(gym.Env):
     self.original_sample = self.sample.clone()
     self.original_label = self.label
     self.original_prob = self.prob.copy()
+    self.prev_prob = self.prob.copy()
+
 
     self.terminated = False
 
@@ -126,18 +128,19 @@ class TabAdvEnv(gym.Env):
 
     change = True if label == self.original_label else False
 
-    if change:
-        # Apply the action to modify the features
-        modified_sample = self.sample.clone().flatten()
-        for i, action_component in enumerate(action):
-            if i in self.integer_features:
-                # If the feature is an integer, round the action component to the nearest integer
-                modified_sample[i] += round(action_component)
-                modified_sample[i] = torch.clamp(modified_sample[i], self.feature_min[i], self.feature_max[i])
-            else:
-                # If the feature is a float, apply the action component directly
-                modified_sample[i] += action_component
-                modified_sample[i] = torch.clamp(modified_sample[i], self.feature_min[i], self.feature_max[i])
+    #if change:
+    # Apply the action to modify the features
+    self.prev_prob = self.prob.copy()
+    modified_sample = self.sample.clone().flatten()
+    for i, action_component in enumerate(action):
+        if i in self.integer_features:
+            # If the feature is an integer, round the action component to the nearest integer
+            modified_sample[i] += round(action_component)
+            modified_sample[i] = torch.clamp(modified_sample[i], self.feature_min[i], self.feature_max[i])
+        else:
+            # If the feature is a float, apply the action component directly
+            modified_sample[i] += action_component
+            modified_sample[i] = torch.clamp(modified_sample[i], self.feature_min[i], self.feature_max[i])
 
 
         # self.sample = self.changes[action](self.sample)
@@ -180,17 +183,24 @@ class TabAdvEnv(gym.Env):
         elif self.prob[1] == self.original_prob[1]:
             reward = -100
     """
-    reward = np.abs(1-self.original_label - self.prob[1])
+    dist = np.sqrt(np.abs(self.prob[1] - self.prev_prob[1]))
+    new_label = 1 - self.original_label
+    #reward = np.abs(1 - self.prob[new_label])
+    #reward = np.abs(self.original_label - self.prob[new_label]) # + dist
+    reward = np.abs(1 - self.prob[self.original_label])
 
-    objective =  reward #- 10*( self.L0_dist/self.n)
-
+    #objective =  -np.square(reward) #- 10*( self.L0_dist/self.n)
+    objective = np.sqrt(reward)
+    #if objective == 0:
+    #    objective = 1
 
     # we want to maximzie this, maybe do some hyper parameter for it
     # maybe apply other method for obhjective
 
     self.number_of_changes -= 1
-    if self.label == 1-self.original_label or self.number_of_changes == 0:
-        self.terminated = True
+    #if self.label == 1-self.original_label or self.number_of_changes == 0:
+    #    self.terminated = True
+    #    objective += 1000
 
     self.reward = objective
     # double chack!!!!!!!!!!!!
