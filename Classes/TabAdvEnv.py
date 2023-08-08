@@ -159,7 +159,7 @@ class TabAdvEnv(gym.Env):
     # LO = torch.sum(self.original_sample - self.sample, axis=1)
     # torch.nanmean()
     self.L0_dist = (self.original_sample != self.sample).sum(axis=1)
-    
+    """
     if self.original_label == 1:
         if self.prob[1] < 0.5:
             reward = 10000
@@ -179,8 +179,10 @@ class TabAdvEnv(gym.Env):
             reward = 50 * ( self.prob[1] / self.original_prob[1]) -50
         elif self.prob[1] == self.original_prob[1]:
             reward = -100
+    """
+    reward = np.abs(1-self.original_label - self.prob[1])
 
-    objective =  reward - 10*( self.L0_dist/self.n)
+    objective =  reward #- 10*( self.L0_dist/self.n)
 
 
     # we want to maximzie this, maybe do some hyper parameter for it
@@ -219,6 +221,10 @@ class TabAdvEnv(gym.Env):
             self.state = self.sample.clone().flatten()
             self.L0_dist = 0
             self.total_reward = 0
+            # new sample
+            self.original_sample = self.sample.clone()
+            self.original_label = self.label
+            self.original_prob = self.prob.copy()
 
         else:
             self.sample = self.original_sample.clone()
