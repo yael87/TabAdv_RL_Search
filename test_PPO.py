@@ -3,7 +3,7 @@ import torch
 import numpy as np
 
 from PPO import PPO
-
+import pickle as pkl
 from Classes.TabAdvEnv import *
 # prepare data and models
 from Utils.data_utils import preprocess_credit, drop_corolated_target, split_to_datasets, preprocess_top100, preprocess_HCDR, \
@@ -16,43 +16,10 @@ from Utils.models_utils import load_target_models, load_surrogate_model, train_G
 from Utils.attack_utils import get_attack_set, get_balanced_attack_set
 
 #################################### Testing ###################################
-def test():
+# np.array(x_adv.iloc[50:51])), y_adv[50]
+def test(target_model, x_adv, y_adv, raw_data_path, version):
     # Set parameters
 
-    configurations = get_config()
-    data_path = configurations["data_path"]
-    raw_data_path = configurations["raw_data_path"]
-    perturbability_path = configurations["perturbability_path"]
-    results_path = configurations["results_path"]
-    seed = int(configurations["seed"])
-    dataset_name = raw_data_path.split("/")[1]
-    models_path = configurations['models_path']
-    exp_type = configurations['exp_type']
-
-    # Get dataset
-    datasets = split_to_datasets(raw_data_path, save_path=data_path)
-
-    # Get scalers
-    # scaler = pickle.load(open(data_path+"/scaler.pkl", 'rb' ))
-    # scaler_pt = pickle.load(open(data_path+"/scaler_pt.pkl", 'rb' ))
-    # constraints, perturbability = get_constraints(dataset_name, perturbability_path)
-
-    columns_names = list(datasets.get('x_test').columns)
-
-    # process(dataset_name, raw_data_path, TorchMinMaxScaler)
-    # train_models(data_path, datasets)
-    # train_REG_models(dataset_name, data_path, datasets)
-    x_adv = datasets.get('x_test')  # first sample
-    y_adv = datasets.get('y_test')  # first sample
-    # Get models
-    GB, LGB, XGB, RF = load_target_models(data_path, models_path)
-    target_models = [GB, XGB, LGB, RF]
-    scaler = None
-
-    attack_x_clean, attack_y_clean = get_attack_set(datasets, target_models, None, scaler ,data_path)
-    attack_size = 300
-    x_adv, attack_y = get_balanced_attack_set(dataset_name, attack_x_clean, attack_y_clean, attack_size, seed)
-    y_adv = attack_y.transpose().values.tolist()[0]
 
     print("============================================================================================")
 
@@ -92,7 +59,7 @@ def test():
     # lr_critic = 0.001           # learning rate for critic
 
     ########################### Our Env ##########################
-    env_name = "TabularAdv-v11"  # environment name
+    env_name = f'TabularAdv-v{version}'  # environment name
     has_continuous_action_space = True  # False
 
     max_ep_len = 400  # max timesteps in one episode
@@ -111,8 +78,8 @@ def test():
 
     # lr_actor = 0.0003       # learning rate for actor network
     # lr_critic = 0.001       # learning rate for critic network
-    lr_actor = 1.  # learning rate for actor network
-    lr_critic = 1.  # learning rate for critic network
+    lr_actor = 0.6  # learning rate for actor network
+    lr_critic = 0.6  # learning rate for critic network
 
     random_seed = 0
     # render = True  # render environment on screen
@@ -122,7 +89,7 @@ def test():
     total_test_episodes = 20  # total num of testing episodes
 ########################################################################
     # env = gym.make(env_name)
-    env = TabAdvEnv(GB, torch.from_numpy(np.array(x_adv.iloc[50:51])), y_adv[50], raw_data_path)
+    env = TabAdvEnv(target_model,x_adv, y_adv, raw_data_path)
 
     # state space dimension
     state_dim = env.observation_space.shape[0]
@@ -162,7 +129,8 @@ def test():
 
             # YAEL
             adv_label = GB.predict(state.reshape(1, -1))
-            print("adv_label: {}, orig label: {}".format(adv_label, y_adv[50]))
+            #print("adv_label: {}, orig label: {}".format(adv_label, y_adv))
+            success = np.equal(adv_label, np.abs(1-y_adv))
             #print("adv sample: ", state)
 
             if render:
@@ -189,7 +157,53 @@ def test():
 
     print("============================================================================================")
 
+    return success
 
 if __name__ == '__main__':
 
-    test()
+    configurations = get_config()
+    data_path = configurations["data_path"]
+    raw_data_path = configurations["raw_data_path"]
+    perturbability_path = configurations["perturbability_path"]
+    results_path = configurations["results_path"]
+    seed = int(configurations["seed"])
+    dataset_name = raw_data_path.split("/")[1]
+    models_path = configurations['models_path']
+    exp_type = configurations['exp_type']
+
+    # Get dataset
+    datasets = split_to_datasets(raw_data_path, save_path=data_path)
+
+    # Get scalers
+    # scaler = pickle.load(open(data_path+"/scaler.pkl", 'rb' ))
+    # scaler_pt = pickle.load(open(data_path+"/scaler_pt.pkl", 'rb' ))
+    # constraints, perturbability = get_constraints(dataset_name, perturbability_path)
+
+    columns_names = list(datasets.get('x_test').columns)
+
+    # process(dataset_name, raw_data_path, TorchMinMaxScaler)
+    # train_models(data_path, datasets)
+    # train_REG_models(dataset_name, data_path, datasets)
+    x_adv = datasets.get('x_test')  # first sample
+    y_adv = datasets.get('y_test')  # first sample
+    # Get models
+    GB, LGB, XGB, RF = load_target_models(data_path, models_path)
+    target_models = [GB, XGB, LGB, RF]
+    scaler = None
+
+    # attack_x_clean, attack_y_clean = get_attack_set(datasets, target_models, None, scaler ,data_path)
+    attack_x_clean = pd.read_csv(open(data_path + "/x_attack_clean", 'rb'))
+    attack_y_clean = pd.read_csv(open(data_path + "/y_attack_clean", 'rb'))
+    attack_size = 300
+    x_adv, attack_y = get_balanced_attack_set(dataset_name, attack_x_clean, attack_y_clean, attack_size, seed)
+    y_adv = attack_y.transpose().values.tolist()[0]
+
+    success_rate = 0
+    for i in range(51):
+        # np.array(x_adv.iloc[50:51])), y_adv[50]
+        # test(target_model, x_adv, y_adv, raw_data_path, version):
+        success = test(GB,torch.from_numpy(np.array(x_adv.iloc[i:i+1])), y_adv[i], raw_data_path, 55)
+        if success:
+            success_rate += 1
+
+    print("success rate: ", success_rate/51)
