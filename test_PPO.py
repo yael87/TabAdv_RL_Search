@@ -70,7 +70,7 @@ def test(target_model, x_adv, y_adv, raw_data_path, version):
     # save_model_freq = int(2e4)  # save model frequency (in num timesteps)
 
     # TODO: define action_std
-    action_std = 0.6  #
+    action_std = 0.5  #
     # update_timestep = max_ep_len * 4  # update policy every n timesteps
     K_epochs = 40  # update policy for K epochs
     eps_clip = 0.2  # clip parameter for PPO
@@ -139,6 +139,8 @@ def test(target_model, x_adv, y_adv, raw_data_path, version):
 
             if done:
                 break
+        if done:
+            break
 
         # clear buffer
         ppo_agent.buffer.clear()
@@ -157,7 +159,7 @@ def test(target_model, x_adv, y_adv, raw_data_path, version):
 
     print("============================================================================================")
 
-    return success
+    return success, state
 
 if __name__ == '__main__':
 
@@ -198,12 +200,15 @@ if __name__ == '__main__':
     x_adv, attack_y = get_balanced_attack_set(dataset_name, attack_x_clean, attack_y_clean, attack_size, seed)
     y_adv = attack_y.transpose().values.tolist()[0]
 
+    advs = []
     success_rate = 0
-    for i in range(50,60):
+    for i in range(260,320):
         # np.array(x_adv.iloc[50:51])), y_adv[50]
         # test(target_model, x_adv, y_adv, raw_data_path, version):
-        success = test(GB,torch.from_numpy(np.array(x_adv.iloc[i:i+1])), y_adv[i], raw_data_path, 16)
+        success,state = test(GB,torch.from_numpy(np.array(x_adv.iloc[i:i+1])), y_adv[i], raw_data_path, 1008)
         if success:
             success_rate += 1
+        
+        advs.append(state)
 
-    print("success rate: ", success_rate/51)
+    print("success rate: ", success_rate/60)

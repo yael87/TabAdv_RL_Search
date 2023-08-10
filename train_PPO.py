@@ -76,18 +76,18 @@ if __name__ == '__main__':
 
     ####### initialize environment hyperparameters ######
 
-    env_name = "TabularAdv-v50"      # environment name
+    env_name = "TabularAdv-v1008"      # environment name
     has_continuous_action_space = True #False
 
     max_ep_len = 400                    # max timesteps in one episode
-    max_training_timesteps = int(3e4)#(1e5)   # break training loop if timeteps > max_training_timesteps (100000)
+    max_training_timesteps = int(1e5)#(1e5)   # break training loop if timeteps > max_training_timesteps (100000)
 
     print_freq = max_ep_len * 4     # print avg reward in the interval (in num timesteps)
     log_freq = max_ep_len * 2       # log avg reward in the interval (in num timesteps)
     save_model_freq = int(1e4)      # save model frequency (in num timesteps)
 
     #TODO: define action_std
-    action_std = 0.1             # starting std for action distribution (Multivariate Normal)
+    action_std = 0.5             # starting std for action distribution (Multivariate Normal)
 
 
     #####################################################
@@ -109,7 +109,7 @@ if __name__ == '__main__':
     lr_actor = 0.6     # learning rate for actor network
     lr_critic = 0.6     # learning rate for critic network
 
-    random_seed = 123         # set random seed if required (0 = no random seed)
+    random_seed = 0         # set random seed if required (0 = no random seed)
 
     #####################################################
 
@@ -265,11 +265,12 @@ if __name__ == '__main__':
 
     # training loop
     #ind = [0,1,2,3,4,455,456,457,458,459]
-    ind = [0,455,1,456,2,3,457,458,4,459]
-    for i in ind:#range(15):
+    ind = [0,455,1,456,2,3,457,458,4,459,455,3,458,2,4,457,1,459,0,456,8,9,10]
+    for x_ind in ind:#range(15):
     #    x_ind = np.random.choice(ind)
         
     #while (x_ind<5 or (x_ind>=400 and x_ind<45)) : #take 10 samples of label 0 and 10 from label 1
+        done = False
         state = env.reset(torch.from_numpy(np.array(x_adv.iloc[x_ind:x_ind+1])), y_adv[x_ind])
         print("new sample: "+str(x_ind))
         
@@ -277,16 +278,12 @@ if __name__ == '__main__':
         time_step = 0
 
         while time_step <= max_training_timesteps : 
-            #if done and x_ind < x_adv.shape[0] or time > 20000:
-            #    if done:
-            #        success += 1
-            #    time = 0 
-            #    state = env.reset(torch.from_numpy(np.array(x_adv.iloc[x_ind:x_ind+1])), y_adv[x_ind])
-                
-            #else:
+         
             if done or time > 20000:
                 if done:
                     success += 1
+                    #ind.append(x_ind)
+                    break
                 state = env.reset()
                 time = 0
             

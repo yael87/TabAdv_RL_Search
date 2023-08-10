@@ -190,12 +190,14 @@ class TabAdvEnv(gym.Env):
    
     #reward = np.abs(1 - self.prob[self.original_label])
     
-    if(np.abs(1 - self.prob[self.original_label]) > 0.8):
+    if(np.abs(1 - self.prob[self.original_label]) > 0.70):
         reward = 100
+    #elif(np.abs(1 - self.prob[self.original_label]) < 0.1):
+    #    reward = -1000
     elif(np.abs(1 - self.prob[self.original_label]) < 0.2):
         reward = -100
     else:
-        reward = np.abs(1 - self.prob[self.original_label])
+        reward = np.abs(1 - self.prob[self.original_label]*100)
 
 
        
@@ -217,8 +219,8 @@ class TabAdvEnv(gym.Env):
     # maybe apply other method for obhjective
 
     self.number_of_changes -= 1
-    #if self.label == 1-self.original_label or self.number_of_changes == 0:
-    #    self.terminated = True
+    if np.abs(1 - self.prob[self.original_label]) > 0.8:
+        self.terminated = True
     #    objective += 1000
 
     self.reward = objective
@@ -247,9 +249,6 @@ class TabAdvEnv(gym.Env):
             self.sample = x_adv.type(torch.FloatTensor)
             self.label = int(y_adv)
             self.prob = self.target_models.predict_proba(self.sample)[0]
-            self.state = self.sample.clone().flatten()
-            self.L0_dist = 0
-            self.total_reward = 0
             # new sample
             self.original_sample = self.sample.clone()
             self.original_label = self.label
@@ -259,10 +258,11 @@ class TabAdvEnv(gym.Env):
             self.sample = self.original_sample.clone()
             self.label = self.original_label
             self.prob = self.original_prob.copy()
-            self.total_reward = 0
-            self.state = self.sample.clone().flatten()
-            self.L0_dist = 0
-
+        
+        self.total_reward = 0
+        self.state = self.sample.clone().flatten()
+        self.L0_dist = 0
+        
         return self.state
 
   def render(self):
