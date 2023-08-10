@@ -237,7 +237,7 @@ class PPO:
             surr2 = torch.clamp(ratios, 1 - self.eps_clip, 1 + self.eps_clip) * advantages
 
             # final loss of clipped objective PPO
-            entropy_coeff = 0.01 # 0.01
+            entropy_coeff = 0.05 # 0.01
             loss = -torch.min(surr1, surr2) + 0.5 * self.MseLoss(state_values, rewards) - entropy_coeff * dist_entropy
 
             # take gradient step

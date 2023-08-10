@@ -144,9 +144,9 @@ class TabAdvEnv(gym.Env):
 
 
         # self.sample = self.changes[action](self.sample)
-        self.sample = modified_sample.reshape(self.sample.shape)
-        self.label = self.target_models.predict(self.sample)
-        self.prob = self.target_models.predict_proba(self.sample)[0]
+    self.sample = modified_sample.reshape(self.sample.shape)
+    self.label = self.target_models.predict(self.sample)
+    self.prob = self.target_models.predict_proba(self.sample)[0]
 
     #else - change other features
     # sign = (-1 if self.label == 1 else 1)
@@ -187,10 +187,29 @@ class TabAdvEnv(gym.Env):
     new_label = 1 - self.original_label
     #reward = np.abs(1 - self.prob[new_label])
     #reward = np.abs(self.original_label - self.prob[new_label]) # + dist
-    reward = np.abs(1 - self.prob[self.original_label])
+   
+    #reward = np.abs(1 - self.prob[self.original_label])
+    
+    if(np.abs(1 - self.prob[self.original_label]) > 0.8):
+        reward = 100
+    elif(np.abs(1 - self.prob[self.original_label]) < 0.2):
+        reward = -100
+    else:
+        reward = np.abs(1 - self.prob[self.original_label])
+
+
+       
+       
+        # + dist
+    
+    #reward = -np.sqrt(np.sqrt(np.sqrt(np.sqrt(np.sqrt(self.prob[self.original_label])))))
+        #reward = np.abs(1 - self.prob[1])
+    ###    reward = np.sqrt(np.sqrt(reward))
+    ##else:
+    #    reward = self.prob[1]
 
     #objective =  -np.square(reward) #- 10*( self.L0_dist/self.n)
-    objective = np.sqrt(reward)
+    objective = reward
     #if objective == 0:
     #    objective = 1
 

@@ -199,10 +199,10 @@ if __name__ == '__main__':
     y_adv = attack_y.transpose().values.tolist()[0]
 
     success_rate = 0
-    for i in range(51):
+    for i in range(50,60):
         # np.array(x_adv.iloc[50:51])), y_adv[50]
         # test(target_model, x_adv, y_adv, raw_data_path, version):
-        success = test(GB,torch.from_numpy(np.array(x_adv.iloc[i:i+1])), y_adv[i], raw_data_path, 55)
+        success = test(GB,torch.from_numpy(np.array(x_adv.iloc[i:i+1])), y_adv[i], raw_data_path, 16)
         if success:
             success_rate += 1
 
