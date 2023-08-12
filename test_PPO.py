@@ -89,7 +89,7 @@ def test(target_model, x_adv, y_adv, raw_data_path, version):
     total_test_episodes = 20  # total num of testing episodes
 ########################################################################
     # env = gym.make(env_name)
-    env = TabAdvEnv(target_model,x_adv, y_adv, raw_data_path)
+    env = TabAdvEnv(GB,x_adv, y_adv, raw_data_path)
 
     # state space dimension
     state_dim = env.observation_space.shape[0]
@@ -128,7 +128,7 @@ def test(target_model, x_adv, y_adv, raw_data_path, version):
             ep_reward += reward
 
             # YAEL
-            adv_label = GB.predict(state.reshape(1, -1))
+            adv_label = target_model.predict(state.reshape(1, -1))
             #print("adv_label: {}, orig label: {}".format(adv_label, y_adv))
             success = np.equal(adv_label, np.abs(1-y_adv))
             #print("adv sample: ", state)
@@ -202,13 +202,114 @@ if __name__ == '__main__':
 
     advs = []
     success_rate = 0
-    for i in range(260,320):
+    success_TOATL = 0
+    ind = [0,1,2,3,4,8,9,10,455,456,457,458,459] #train set
+    
+
+    #===== test set of GB =====#
+
+    for i in range (10,70): #class 0
         # np.array(x_adv.iloc[50:51])), y_adv[50]
         # test(target_model, x_adv, y_adv, raw_data_path, version):
         success,state = test(GB,torch.from_numpy(np.array(x_adv.iloc[i:i+1])), y_adv[i], raw_data_path, 1008)
         if success:
             success_rate += 1
+            success_TOATL += 1
         
         advs.append(state)
+    print("success rate for class 0: ", success_rate/60)
+    success_rate = 0
+    for i in range (460,520): #class 1
+        # np.array(x_adv.iloc[50:51])), y_adv[50]
+        # test(target_model, x_adv, y_adv, raw_data_path, version):
+        success,state = test(GB,torch.from_numpy(np.array(x_adv.iloc[i:i+1])), y_adv[i], raw_data_path, 1008)
+        if success:
+            success_rate += 1
+            success_TOATL   += 1
+        
+        advs.append(state)
+    print("success rate for class 1: ", success_rate/60)
 
-    print("success rate: ", success_rate/60)
+    print("success rate TOTAL: ", success_TOATL/120)
+    
+
+    #===== transfer to LGB =====#
+
+    ### test set ###
+    for i in range (10,70): #class 0
+        # np.array(x_adv.iloc[50:51])), y_adv[50]
+        # test(target_model, x_adv, y_adv, raw_data_path, version):
+        success,state = test(LGB,torch.from_numpy(np.array(x_adv.iloc[i:i+1])), y_adv[i], raw_data_path, 1008)
+        if success:
+            success_rate += 1
+            success_TOATL += 1
+        
+        advs.append(state)
+    print("success rate for class 0: ", success_rate/60)
+    success_rate = 0
+    for i in range (460,520): #class 1
+        # np.array(x_adv.iloc[50:51])), y_adv[50]
+        # test(target_model, x_adv, y_adv, raw_data_path, version):
+        success,state = test(LGB,torch.from_numpy(np.array(x_adv.iloc[i:i+1])), y_adv[i], raw_data_path, 1008)
+        if success:
+            success_rate += 1
+            success_TOATL   += 1
+        
+        advs.append(state)
+    print("success rate for class 1: ", success_rate/60)
+
+    print("success rate TOTAL: ", success_TOATL/120)
+
+    #===== transfer to XGB =====#
+
+    ### test set ###
+    for i in range (10,70): #class 0
+        # np.array(x_adv.iloc[50:51])), y_adv[50]
+        # test(target_model, x_adv, y_adv, raw_data_path, version):
+        success,state = test(XGB,torch.from_numpy(np.array(x_adv.iloc[i:i+1])), y_adv[i], raw_data_path, 1008)
+        if success:
+            success_rate += 1
+            success_TOATL += 1
+        
+        advs.append(state)
+    print("success rate for class 0: ", success_rate/60)
+    success_rate = 0
+    for i in range (460,520): #class 1
+        # np.array(x_adv.iloc[50:51])), y_adv[50]
+        # test(target_model, x_adv, y_adv, raw_data_path, version):
+        success,state = test(XGB,torch.from_numpy(np.array(x_adv.iloc[i:i+1])), y_adv[i], raw_data_path, 1008)
+        if success:
+            success_rate += 1
+            success_TOATL   += 1
+        
+        advs.append(state)
+    print("success rate for class 1: ", success_rate/60)
+
+    print("success rate TOTAL: ", success_TOATL/120)
+
+#===== transfer to RF =====#
+
+    ### test set ###
+    for i in range (10,70): #class 0
+        # np.array(x_adv.iloc[50:51])), y_adv[50]
+        # test(target_model, x_adv, y_adv, raw_data_path, version):
+        success,state = test(RF,torch.from_numpy(np.array(x_adv.iloc[i:i+1])), y_adv[i], raw_data_path, 1008)
+        if success:
+            success_rate += 1
+            success_TOATL += 1
+        
+        advs.append(state)
+    print("success rate for class 0: ", success_rate/60)
+    success_rate = 0
+    for i in range (460,520): #class 1
+        # np.array(x_adv.iloc[50:51])), y_adv[50]
+        # test(target_model, x_adv, y_adv, raw_data_path, version):
+        success,state = test(RF,torch.from_numpy(np.array(x_adv.iloc[i:i+1])), y_adv[i], raw_data_path, 1008)
+        if success:
+            success_rate += 1
+            success_TOATL   += 1
+        
+        advs.append(state)
+    print("success rate for class 1: ", success_rate/60)
+
+    print("success rate TOTAL: ", success_TOATL/120)
