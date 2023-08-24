@@ -79,6 +79,9 @@ class TabAdvEnv(gym.Env):
 
     # self.action_space = spaces.Box(low=np.array(self.feature_min),high=np.array(self.feature_max), dtype=np.float32)
     self.action_space = spaces.Box(low=-1000, high=1000, shape=(self.n,), dtype=np.float32)
+    
+    #self.action_space = spaces.Box(low=np.array(self.feature_min), high=np.array(self.feature_max), dtype=np.float32)
+
     #self.action_space = spaces.Dict(action_space)
     # self.action_space = spaces.Dict(action_space)
     # low_state = np.array([0, -1], dtype=np.float32)
@@ -147,6 +150,7 @@ class TabAdvEnv(gym.Env):
     self.sample = modified_sample.reshape(self.sample.shape)
     self.label = self.target_models.predict(self.sample)
     self.prob = self.target_models.predict_proba(self.sample)[0]
+    
 
     #else - change other features
     # sign = (-1 if self.label == 1 else 1)
@@ -189,7 +193,7 @@ class TabAdvEnv(gym.Env):
     #reward = np.abs(self.original_label - self.prob[new_label]) # + dist
    
     #reward = np.abs(1 - self.prob[self.original_label])
-    
+    '''
     if(np.abs(1 - self.prob[self.original_label]) > 0.70):
         reward = 100
     #elif(np.abs(1 - self.prob[self.original_label]) < 0.1):
@@ -200,17 +204,14 @@ class TabAdvEnv(gym.Env):
         reward = np.abs(1 - self.prob[self.original_label]*100)
 
 
-       
+    '''   
        
         # + dist
     
-    #reward = -np.sqrt(np.sqrt(np.sqrt(np.sqrt(np.sqrt(self.prob[self.original_label])))))
-        #reward = np.abs(1 - self.prob[1])
-    ###    reward = np.sqrt(np.sqrt(reward))
-    ##else:
-    #    reward = self.prob[1]
+    reward = np.log10((1 - self.prob[self.original_label])+0.0000001)
+    #reward = -np.log10 (self.prob[self.original_label])
 
-    #objective =  -np.square(reward) #- 10*( self.L0_dist/self.n)
+    
     objective = reward
     #if objective == 0:
     #    objective = 1
@@ -220,7 +221,8 @@ class TabAdvEnv(gym.Env):
 
     self.number_of_changes -= 1
     if np.abs(1 - self.prob[self.original_label]) > 0.8:
-        self.terminated = True
+        aa=0
+    #    self.terminated = True
     #    objective += 1000
 
     self.reward = objective

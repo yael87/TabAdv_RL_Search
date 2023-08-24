@@ -76,7 +76,7 @@ if __name__ == '__main__':
 
     ####### initialize environment hyperparameters ######
 
-    env_name = "TabularAdv-v1008"      # environment name
+    env_name = "TabularAdv-v2000"      # environment name
     has_continuous_action_space = True #False
 
     max_ep_len = 400                    # max timesteps in one episode

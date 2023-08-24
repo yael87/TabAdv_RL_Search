@@ -21,7 +21,7 @@ def test(target_model, x_adv, y_adv, raw_data_path, version):
     # Set parameters
 
 
-    print("============================================================================================")
+    #print("============================================================================================")
 
     ################## hyperparameters ##################
 
@@ -110,11 +110,11 @@ def test(target_model, x_adv, y_adv, raw_data_path, version):
 
     directory = "PPO_preTrained" + '/' + env_name + '/'
     checkpoint_path = directory + "PPO_{}_{}_{}.pth".format(env_name, random_seed, run_num_pretrained)
-    print("loading network from : " + checkpoint_path)
+    #print("loading network from : " + checkpoint_path)
 
     ppo_agent.load(checkpoint_path)
 
-    print("--------------------------------------------------------------------------------------------")
+    #print("--------------------------------------------------------------------------------------------")
 
     test_running_reward = 0
 
@@ -146,18 +146,18 @@ def test(target_model, x_adv, y_adv, raw_data_path, version):
         ppo_agent.buffer.clear()
 
         test_running_reward +=  ep_reward
-        print('Episode: {} \t\t Reward: {}'.format(ep, round(ep_reward, 2)))
+        #print('Episode: {} \t\t Reward: {}'.format(ep, round(ep_reward, 2)))
         ep_reward = 0
 
     env.close()
 
-    print("============================================================================================")
+    #print("============================================================================================")
 
     avg_test_reward = test_running_reward / total_test_episodes
     avg_test_reward = round(avg_test_reward, 2)
-    print("average test reward : " + str(avg_test_reward))
+    #print("average test reward : " + str(avg_test_reward))
 
-    print("============================================================================================")
+    #print("============================================================================================")
 
     return success, state
 
@@ -205,13 +205,13 @@ if __name__ == '__main__':
     success_TOATL = 0
     ind = [0,1,2,3,4,8,9,10,455,456,457,458,459] #train set
     
-
+    
     #===== test set of GB =====#
 
     for i in range (10,70): #class 0
         # np.array(x_adv.iloc[50:51])), y_adv[50]
         # test(target_model, x_adv, y_adv, raw_data_path, version):
-        success,state = test(GB,torch.from_numpy(np.array(x_adv.iloc[i:i+1])), y_adv[i], raw_data_path, 1008)
+        success,state = test(GB,torch.from_numpy(np.array(x_adv.iloc[i:i+1])), y_adv[i], raw_data_path, 1009)
         if success:
             success_rate += 1
             success_TOATL += 1
@@ -222,7 +222,7 @@ if __name__ == '__main__':
     for i in range (460,520): #class 1
         # np.array(x_adv.iloc[50:51])), y_adv[50]
         # test(target_model, x_adv, y_adv, raw_data_path, version):
-        success,state = test(GB,torch.from_numpy(np.array(x_adv.iloc[i:i+1])), y_adv[i], raw_data_path, 1008)
+        success,state = test(GB,torch.from_numpy(np.array(x_adv.iloc[i:i+1])), y_adv[i], raw_data_path, 1009)
         if success:
             success_rate += 1
             success_TOATL   += 1
@@ -236,10 +236,12 @@ if __name__ == '__main__':
     #===== transfer to LGB =====#
 
     ### test set ###
+    success_rate = 0
+    success_TOATL = 0
     for i in range (10,70): #class 0
         # np.array(x_adv.iloc[50:51])), y_adv[50]
         # test(target_model, x_adv, y_adv, raw_data_path, version):
-        success,state = test(LGB,torch.from_numpy(np.array(x_adv.iloc[i:i+1])), y_adv[i], raw_data_path, 1008)
+        success,state = test(XGB,torch.from_numpy(np.array(x_adv.iloc[i:i+1])), y_adv[i], raw_data_path, 1010)
         if success:
             success_rate += 1
             success_TOATL += 1
@@ -250,7 +252,7 @@ if __name__ == '__main__':
     for i in range (460,520): #class 1
         # np.array(x_adv.iloc[50:51])), y_adv[50]
         # test(target_model, x_adv, y_adv, raw_data_path, version):
-        success,state = test(LGB,torch.from_numpy(np.array(x_adv.iloc[i:i+1])), y_adv[i], raw_data_path, 1008)
+        success,state = test(XGB,torch.from_numpy(np.array(x_adv.iloc[i:i+1])), y_adv[i], raw_data_path, 1010)
         if success:
             success_rate += 1
             success_TOATL   += 1
@@ -259,14 +261,16 @@ if __name__ == '__main__':
     print("success rate for class 1: ", success_rate/60)
 
     print("success rate TOTAL: ", success_TOATL/120)
-
+    
     #===== transfer to XGB =====#
 
     ### test set ###
+    success_rate = 0
+    success_TOATL = 0
     for i in range (10,70): #class 0
         # np.array(x_adv.iloc[50:51])), y_adv[50]
         # test(target_model, x_adv, y_adv, raw_data_path, version):
-        success,state = test(XGB,torch.from_numpy(np.array(x_adv.iloc[i:i+1])), y_adv[i], raw_data_path, 1008)
+        success,state = test(XGB,torch.from_numpy(np.array(x_adv.iloc[i:i+1])), y_adv[i], raw_data_path, 1009)
         if success:
             success_rate += 1
             success_TOATL += 1
@@ -277,7 +281,7 @@ if __name__ == '__main__':
     for i in range (460,520): #class 1
         # np.array(x_adv.iloc[50:51])), y_adv[50]
         # test(target_model, x_adv, y_adv, raw_data_path, version):
-        success,state = test(XGB,torch.from_numpy(np.array(x_adv.iloc[i:i+1])), y_adv[i], raw_data_path, 1008)
+        success,state = test(XGB,torch.from_numpy(np.array(x_adv.iloc[i:i+1])), y_adv[i], raw_data_path, 1009)
         if success:
             success_rate += 1
             success_TOATL   += 1
@@ -290,10 +294,12 @@ if __name__ == '__main__':
 #===== transfer to RF =====#
 
     ### test set ###
+    success_rate = 0
+    success_TOATL = 0
     for i in range (10,70): #class 0
         # np.array(x_adv.iloc[50:51])), y_adv[50]
         # test(target_model, x_adv, y_adv, raw_data_path, version):
-        success,state = test(RF,torch.from_numpy(np.array(x_adv.iloc[i:i+1])), y_adv[i], raw_data_path, 1008)
+        success,state = test(RF,torch.from_numpy(np.array(x_adv.iloc[i:i+1])), y_adv[i], raw_data_path, 1009)
         if success:
             success_rate += 1
             success_TOATL += 1
@@ -304,7 +310,7 @@ if __name__ == '__main__':
     for i in range (460,520): #class 1
         # np.array(x_adv.iloc[50:51])), y_adv[50]
         # test(target_model, x_adv, y_adv, raw_data_path, version):
-        success,state = test(RF,torch.from_numpy(np.array(x_adv.iloc[i:i+1])), y_adv[i], raw_data_path, 1008)
+        success,state = test(RF,torch.from_numpy(np.array(x_adv.iloc[i:i+1])), y_adv[i], raw_data_path, 1009)
         if success:
             success_rate += 1
             success_TOATL   += 1
