@@ -1,0 +1,2 @@
+attack_model,succsess class 0 on LGB,succsess class 1 on LGB,succsess TOTAL on LGB,succsess class 0 on XGB,succsess class 1 on XGB,succsess TOTAL on XGB,succsess class 0 on RF,succsess class 1 on RF,succsess TOTAL on RF
+GB,1.0,1.0,1.0,0.0,1.0,0.5,0.9833333333333333,0.016666666666666666,0.5

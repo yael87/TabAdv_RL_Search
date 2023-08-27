@@ -76,14 +76,15 @@ if __name__ == '__main__':
 
     ####### initialize environment hyperparameters ######
 
-    env_name = "TabularAdv-v2000"      # environment name
+    env_name = "TabularAdv-v2005"      # environment name
     has_continuous_action_space = True #False
 
     max_ep_len = 400                    # max timesteps in one episode
-    max_training_timesteps = int(1e5)#(1e5)   # break training loop if timeteps > max_training_timesteps (100000)
+    max_training_timesteps = int(2e4)#(1e5)   # break training loop if timeteps > max_training_timesteps (100000)
 
     print_freq = max_ep_len * 4     # print avg reward in the interval (in num timesteps)
-    log_freq = max_ep_len * 2       # log avg reward in the interval (in num timesteps)
+    #log_freq = max_ep_len * 2       # log avg reward in the interval (in num timesteps)
+    log_freq = max_ep_len
     save_model_freq = int(1e4)      # save model frequency (in num timesteps)
 
     #TODO: define action_std
@@ -265,7 +266,7 @@ if __name__ == '__main__':
 
     # training loop
     #ind = [0,1,2,3,4,455,456,457,458,459]
-    ind = [0,455,1,456,2,3,457,458,4,459,455,3,458,2,4,457,1,459,0,456,8,9,10] #train set
+    ind = [0,455,1,456,2,3,457,458,4,459,455,3,458,2,4,457,1,459,0,456] #train set
     for x_ind in ind:#range(15):
     #    x_ind = np.random.choice(ind)
         
@@ -278,23 +279,14 @@ if __name__ == '__main__':
         time_step = 0
 
         while time_step <= max_training_timesteps : 
-         
-            if done or time > 20000:
-                if done:
-                    success += 1
-                    #ind.append(x_ind)
-                    break
-                state = env.reset()
-                time = 0
-            
-            time += 1
+            state = env.reset()
             current_ep_reward = 0
 
             for t in range(1, max_ep_len +1):
 
                 # select action with policy
                 action = ppo_agent.select_action(state) #torch.from_numpy(state))
-                state, reward, done, _ = env.step(action)
+                state, reward, done, _ = env.step(action, 'train')
                 #print("orig label: {} \t\t new label: {} \t\t prob: {} \t\t l0_dist: {}".format(env.original_label, env.label, env.prob, env.L0_dist))
 
                 # saving reward and is_terminals
@@ -316,7 +308,10 @@ if __name__ == '__main__':
                 if time_step % log_freq == 0:
 
                     # log average reward till last episode
-                    log_avg_reward = log_running_reward / log_running_episodes
+                    if log_running_episodes != 0:
+                        log_avg_reward = log_running_reward / log_running_episodes
+                    else:
+                        log_avg_reward = log_running_reward / log_freq
                     try:
                         log_avg_reward = round(log_avg_reward,4)
                     except:
@@ -357,10 +352,7 @@ if __name__ == '__main__':
                     print("Elapsed Time  : ", datetime.now().replace(microsecond=0) - start_time)
                     print("--------------------------------------------------------------------------------------------")
 
-                # break; if the episode is over
-                if done:
-                    break
-
+                
             print_running_reward += current_ep_reward
             print_running_episodes += 1
 

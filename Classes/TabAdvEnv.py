@@ -122,7 +122,7 @@ class TabAdvEnv(gym.Env):
 
     # self.state = np.array([self.label, np.abs(0.5 - self.prob) * (-1 if self.label == 1 else 1)], dtype=np.float32)
 
-  def step(self, action):
+  def step(self, action, mode='train'):
     # update we made a change
     self.count +=1
 
@@ -208,11 +208,11 @@ class TabAdvEnv(gym.Env):
        
         # + dist
     
-    reward = np.log10((1 - self.prob[self.original_label])+0.0000001)
-    #reward = -np.log10 (self.prob[self.original_label])
+    #reward = np.log2((1 - self.prob[self.original_label])+0.0000001)
+    reward = np.log2(self.prob[new_label]+0.0000001)
 
     
-    objective = reward
+    objective = -reward
     #if objective == 0:
     #    objective = 1
 
@@ -221,14 +221,17 @@ class TabAdvEnv(gym.Env):
 
     self.number_of_changes -= 1
     if np.abs(1 - self.prob[self.original_label]) > 0.8:
-        aa=0
+        print("adv found, prob: {}, reward: {}".format(self.prob, reward))
+        if mode == 'test':
+            self.terminated = True
+        
     #    self.terminated = True
     #    objective += 1000
 
     self.reward = objective
     # double chack!!!!!!!!!!!!
     if self.terminated:
-        self.reward = self.total_reward + objective
+        self.reward = self.total_reward
 
     self.total_reward += self.reward
     self.state = self.sample.clone().flatten()
