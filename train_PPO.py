@@ -76,11 +76,11 @@ if __name__ == '__main__':
 
     ####### initialize environment hyperparameters ######
 
-    env_name = "TabularAdv-v2005"      # environment name
+    env_name = "TabularAdv-v2006"      # environment name
     has_continuous_action_space = True #False
 
     max_ep_len = 400                    # max timesteps in one episode
-    max_training_timesteps = int(2e4)#(1e5)   # break training loop if timeteps > max_training_timesteps (100000)
+    max_training_timesteps = int(1e5)#(1e5)   # break training loop if timeteps > max_training_timesteps (100000)
 
     print_freq = max_ep_len * 4     # print avg reward in the interval (in num timesteps)
     #log_freq = max_ep_len * 2       # log avg reward in the interval (in num timesteps)
