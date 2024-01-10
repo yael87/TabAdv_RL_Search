@@ -164,7 +164,7 @@ def test(target_model, x_adv, y_adv, raw_data_path, version):
 
 if __name__ == '__main__':
 
-    PPO_model_v = 2005
+    PPO_model_v = 2006
     configurations = get_config()
     data_path = configurations["data_path"]
     raw_data_path = configurations["raw_data_path"]
